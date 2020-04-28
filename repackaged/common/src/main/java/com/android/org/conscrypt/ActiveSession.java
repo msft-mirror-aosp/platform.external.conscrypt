@@ -183,12 +183,6 @@ final class ActiveSession implements ConscryptSession {
 
     @Override
     public Certificate[] getLocalCertificates() {
-        // Local certificates never change, so set them locally as soon as they're available
-        if (localCertificates == null) {
-            synchronized (ssl) {
-                localCertificates = ssl.getLocalCertificates();
-            }
-        }
         return localCertificates == null ? null : localCertificates.clone();
     }
 
@@ -225,9 +219,8 @@ final class ActiveSession implements ConscryptSession {
 
     @Override
     public Principal getLocalPrincipal() {
-        X509Certificate[] certs = (X509Certificate[]) getLocalCertificates();
-        if (certs != null && certs.length > 0) {
-            return certs[0].getSubjectX500Principal();
+        if (localCertificates != null && localCertificates.length > 0) {
+            return localCertificates[0].getSubjectX500Principal();
         } else {
             return null;
         }
@@ -301,9 +294,7 @@ final class ActiveSession implements ConscryptSession {
     void onPeerCertificateAvailable(String peerHost, int peerPort) throws CertificateException {
         synchronized (ssl) {
             id = null;
-            if (localCertificates == null) {
-                this.localCertificates = ssl.getLocalCertificates();
-            }
+            this.localCertificates = ssl.getLocalCertificates();
             if (this.peerCertificates == null) {
                 // When resuming a session, the cert_verify_callback (which calls
                 // onPeerCertificatesReceived) isn't called by BoringSSL during the handshake

@@ -32,7 +32,6 @@ import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.net.ssl.SSLSession;
-import org.conscrypt.io.IoUtils;
 
 /**
  * File-based cache implementation. Only one process should access the
@@ -173,7 +172,12 @@ public final class FileClientSessionCache {
                 logReadError(host, file, e);
                 return null;
             } finally {
-                IoUtils.closeQuietly(in);
+                if (in != null) {
+                    try {
+                        in.close();
+                    } catch (Exception ignored) {
+                    }
+                }
             }
         }
 

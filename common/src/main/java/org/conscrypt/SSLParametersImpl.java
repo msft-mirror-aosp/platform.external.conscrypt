@@ -17,7 +17,6 @@
 
 package org.conscrypt;
 
-import java.security.AlgorithmConstraints;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -26,12 +25,10 @@ import java.security.SecureRandom;
 import java.security.UnrecoverableKeyException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Set;
 import javax.crypto.SecretKey;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SNIMatcher;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509ExtendedKeyManager;
@@ -90,8 +87,6 @@ final class SSLParametersImpl implements Cloneable {
     private String endpointIdentificationAlgorithm;
     // Whether to use the local cipher suites order
     private boolean useCipherSuitesOrder;
-    private Collection<SNIMatcher> sniMatchers;
-    private AlgorithmConstraints algorithmConstraints;
 
     // client-side only, bypasses the property based configuration, used for tests
     private boolean ctVerificationEnabled;
@@ -634,25 +629,6 @@ final class SSLParametersImpl implements Cloneable {
 
     boolean getUseCipherSuitesOrder() {
         return useCipherSuitesOrder;
-    }
-
-    Collection<SNIMatcher> getSNIMatchers() {
-        if (sniMatchers == null) {
-            return null;
-        }
-        return new ArrayList<>(sniMatchers);
-    }
-
-    void setSNIMatchers(Collection<SNIMatcher> sniMatchers) {
-        this.sniMatchers = sniMatchers != null ? new ArrayList<>(sniMatchers) : null;
-    }
-
-    AlgorithmConstraints getAlgorithmConstraints() {
-        return algorithmConstraints;
-    }
-
-    void setAlgorithmConstraints(AlgorithmConstraints algorithmConstraints) {
-        this.algorithmConstraints = algorithmConstraints;
     }
 
     void setUseCipherSuitesOrder(boolean useCipherSuitesOrder) {

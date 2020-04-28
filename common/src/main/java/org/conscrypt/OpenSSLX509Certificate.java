@@ -308,11 +308,7 @@ public final class OpenSSLX509Certificate extends X509Certificate {
     @Override
     public String getSigAlgName() {
         String oid = getSigAlgOID();
-        String algName = OidData.oidToAlgorithmName(oid);
-        if (algName != null) {
-            return algName;
-        }
-        algName = Platform.oidToAlgorithmName(oid);
+        String algName = Platform.oidToAlgorithmName(oid);
         if (algName != null) {
             return algName;
         }

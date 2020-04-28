@@ -37,7 +37,8 @@ import javax.net.ssl.TrustManagerFactory;
  */
 @libcore.api.IntraCoreApi
 @Internal
-public class DefaultSSLContextImpl extends OpenSSLContextImpl {
+public final class DefaultSSLContextImpl extends OpenSSLContextImpl {
+
     /**
      * Accessed by SSLContextImpl(DefaultSSLContextImpl) holding the
      * DefaultSSLContextImpl.class monitor
@@ -56,12 +57,13 @@ public class DefaultSSLContextImpl extends OpenSSLContextImpl {
      * rest of this constructor to guarantee that we don't have races in
      * creating the state shared between all default SSLContexts.
      */
-    private DefaultSSLContextImpl(String[] protocols) throws GeneralSecurityException, IOException {
-        super(protocols, true);
+    @libcore.api.IntraCoreApi
+    public DefaultSSLContextImpl() throws GeneralSecurityException, IOException {
+        super();
     }
 
     // TODO javax.net.ssl.keyStoreProvider system property
-    KeyManager[] getKeyManagers() throws GeneralSecurityException, IOException {
+    KeyManager[] getKeyManagers () throws GeneralSecurityException, IOException {
         if (KEY_MANAGERS != null) {
             return KEY_MANAGERS;
         }
@@ -127,27 +129,5 @@ public class DefaultSSLContextImpl extends OpenSSLContextImpl {
     public void engineInit(KeyManager[] kms, TrustManager[] tms,
             SecureRandom sr) throws KeyManagementException {
         throw new KeyManagementException("Do not init() the default SSLContext ");
-    }
-
-    /**
-     * @hide This class is not part of the Android public SDK API
-     */
-    @libcore.api.IntraCoreApi
-    public final static class TLSv13 extends DefaultSSLContextImpl {
-        @libcore.api.IntraCoreApi
-        public TLSv13() throws GeneralSecurityException, IOException {
-            super(NativeCrypto.TLSV13_PROTOCOLS);
-        }
-    }
-
-    /**
-     * @hide This class is not part of the Android public SDK API
-     */
-    @libcore.api.IntraCoreApi
-    public final static class TLSv12 extends DefaultSSLContextImpl {
-        @libcore.api.IntraCoreApi
-        public TLSv12() throws GeneralSecurityException, IOException {
-            super(NativeCrypto.TLSV12_PROTOCOLS);
-        }
     }
 }

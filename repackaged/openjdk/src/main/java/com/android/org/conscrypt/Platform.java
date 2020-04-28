@@ -545,10 +545,7 @@ final class Platform {
     static String oidToAlgorithmName(String oid) {
         try {
             return AlgorithmId.get(oid).getName();
-        } catch (Exception e) {
-            return oid;
-        } catch (IllegalAccessError e) {
-            // This can happen under JPMS because AlgorithmId isn't exported by java.base
+        } catch (NoSuchAlgorithmException e) {
             return oid;
         }
     }
@@ -718,13 +715,6 @@ final class Platform {
 
     static CTPolicy newDefaultPolicy(CTLogStore logStore) {
         return null;
-    }
-
-    static boolean serverNamePermitted(SSLParametersImpl parameters, String serverName) {
-        if (JAVA_VERSION >= 8) {
-            return Java8PlatformUtil.serverNamePermitted(parameters, serverName);
-        }
-        return true;
     }
 
     private static boolean isAndroid() {

@@ -96,25 +96,18 @@ final class CryptoUpcalls {
         // first not-us provider that initializes correctly.
         if (signature == null) {
             ArrayList<Provider> providers = getExternalProviders("Signature." + algorithm);
-            RuntimeException savedRuntimeException = null;
             for (Provider p : providers) {
                 try {
                     signature = Signature.getInstance(algorithm, p);
                     signature.initSign(javaKey);
                     break;
-                } catch (NoSuchAlgorithmException | InvalidKeyException e) {
+                } catch (NoSuchAlgorithmException e) {
                     signature = null;
-                } catch (RuntimeException e) {
+                } catch (InvalidKeyException e) {
                     signature = null;
-                    if (savedRuntimeException == null) {
-                        savedRuntimeException = e;
-                    }
                 }
             }
             if (signature == null) {
-                if (savedRuntimeException != null) {
-                    throw savedRuntimeException;
-                }
                 logger.warning("Could not find provider for algorithm: " + algorithm);
                 return null;
             }

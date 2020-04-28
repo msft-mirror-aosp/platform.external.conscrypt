@@ -65,6 +65,7 @@ import static org.conscrypt.SSLUtils.EngineStates.STATE_READY_HANDSHAKE_CUT_THRO
 import static org.conscrypt.SSLUtils.calculateOutNetBufSize;
 import static org.conscrypt.SSLUtils.toSSLHandshakeException;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
@@ -175,6 +176,8 @@ final class ConscryptEngine extends AbstractConscryptEngine implements NativeCry
     private final ByteBuffer[] singleSrcBuffer = new ByteBuffer[1];
     private final ByteBuffer[] singleDstBuffer = new ByteBuffer[1];
     private final PeerInfoProvider peerInfoProvider;
+
+    private SSLException handshakeException;
 
     ConscryptEngine(SSLParametersImpl sslParameters) {
         this.sslParameters = sslParameters;
@@ -444,7 +447,6 @@ final class ConscryptEngine extends AbstractConscryptEngine implements NativeCry
                 String logMessage = String.format("ssl_unexpected_ccs: host=%s", getPeerHost());
                 Platform.logEvent(logMessage);
             }
-            closeAll();
             throw SSLUtils.toSSLHandshakeException(e);
         } finally {
             if (releaseResources) {
@@ -454,18 +456,17 @@ final class ConscryptEngine extends AbstractConscryptEngine implements NativeCry
     }
 
     @Override
-    public void closeInbound() {
+    public void closeInbound() throws SSLException {
         synchronized (ssl) {
             if (state == STATE_CLOSED || state == STATE_CLOSED_INBOUND) {
                 return;
             }
             if (isHandshakeStarted()) {
-                if (state == STATE_CLOSED_OUTBOUND) {
-                    transitionTo(STATE_CLOSED);
+                if (isOutboundDone()) {
+                    closeAndFreeResources();
                 } else {
                     transitionTo(STATE_CLOSED_INBOUND);
                 }
-                freeIfDone();
             } else {
                 // Never started the handshake. Just close now.
                 closeAndFreeResources();
@@ -480,13 +481,12 @@ final class ConscryptEngine extends AbstractConscryptEngine implements NativeCry
                 return;
             }
             if (isHandshakeStarted()) {
-                if (state == STATE_CLOSED_INBOUND) {
-                    transitionTo(STATE_CLOSED);
+                sendSSLShutdown();
+                if (isInboundDone()) {
+                    closeAndFreeResources();
                 } else {
                     transitionTo(STATE_CLOSED_OUTBOUND);
                 }
-                sendSSLShutdown();
-                freeIfDone();
             } else {
                 // Never started the handshake. Just close now.
                 closeAndFreeResources();
@@ -558,7 +558,7 @@ final class ConscryptEngine extends AbstractConscryptEngine implements NativeCry
         throw new IllegalStateException("Unexpected engine state: " + state);
     }
 
-    int pendingOutboundEncryptedBytes() {
+    private int pendingOutboundEncryptedBytes() {
         return networkBio.getPendingWrittenBytes();
     }
 
@@ -642,20 +642,15 @@ final class ConscryptEngine extends AbstractConscryptEngine implements NativeCry
     @Override
     public boolean isInboundDone() {
         synchronized (ssl) {
-            return (state == STATE_CLOSED
-                    || state == STATE_CLOSED_INBOUND
-                    || ssl.wasShutdownReceived())
-                && (pendingInboundCleartextBytes() == 0);
+            return state == STATE_CLOSED || state == STATE_CLOSED_INBOUND
+                    || ssl.wasShutdownReceived();
         }
     }
 
     @Override
     public boolean isOutboundDone() {
         synchronized (ssl) {
-            return (state == STATE_CLOSED
-                    || state == STATE_CLOSED_OUTBOUND
-                    || ssl.wasShutdownSent())
-                && (pendingOutboundEncryptedBytes() == 0);
+            return state == STATE_CLOSED || state == STATE_CLOSED_OUTBOUND || ssl.wasShutdownSent();
         }
     }
 
@@ -762,7 +757,6 @@ final class ConscryptEngine extends AbstractConscryptEngine implements NativeCry
                     break;
                 case STATE_CLOSED_INBOUND:
                 case STATE_CLOSED:
-                    freeIfDone();
                     // If the inbound direction is closed. we can't send anymore.
                     return new SSLEngineResult(Status.CLOSED, getHandshakeStatusInternal(), 0, 0);
                 case STATE_NEW:
@@ -881,7 +875,8 @@ final class ConscryptEngine extends AbstractConscryptEngine implements NativeCry
                                 case -SSL_ERROR_ZERO_RETURN: {
                                     // We received a close_notify from the peer, so mark the
                                     // inbound direction as closed and shut down the SSL object
-                                    closeAll();
+                                    closeInbound();
+                                    sendSSLShutdown();
                                     return new SSLEngineResult(Status.CLOSED,
                                             pendingOutboundEncryptedBytes() > 0
                                                     ? NEED_WRAP : NOT_HANDSHAKING,
@@ -889,7 +884,7 @@ final class ConscryptEngine extends AbstractConscryptEngine implements NativeCry
                                 }
                                 default: {
                                     // Should never get here.
-                                    closeAll();
+                                    sendSSLShutdown();
                                     throw newSslExceptionWithMessage("SSL_read");
                                 }
                             }
@@ -901,12 +896,28 @@ final class ConscryptEngine extends AbstractConscryptEngine implements NativeCry
                     // it in the pendingInboundCleartextBytes() call.
                     ssl.forceRead();
                 }
+            } catch (SSLException e) {
+                if (pendingOutboundEncryptedBytes() > 0) {
+                    // We need to flush any pending bytes to the remote endpoint in case
+                    // there is an alert that needs to be propagated.
+                    if (!handshakeFinished && handshakeException == null) {
+                        // Save the handshake exception. We will re-throw during the next
+                        // handshake.
+                        handshakeException = e;
+                    }
+                    return new SSLEngineResult(OK, NEED_WRAP, bytesConsumed, bytesProduced);
+                }
+
+                // Nothing to write, just shutdown and throw the exception.
+                sendSSLShutdown();
+                throw convertException(e);
             } catch (InterruptedIOException e) {
                 return newResult(bytesConsumed, bytesProduced, handshakeStatus);
-            } catch (IOException e) {
-                // Shut down the SSL and rethrow the exception.  Users will need to drain any alerts
-                // from the SSL before closing.
+            } catch (EOFException e) {
                 closeAll();
+                throw convertException(e);
+            } catch (IOException e) {
+                sendSSLShutdown();
                 throw convertException(e);
             }
 
@@ -960,6 +971,19 @@ final class ConscryptEngine extends AbstractConscryptEngine implements NativeCry
             // Only actually perform the handshake if we haven't already just completed it
             // via BIO operations.
             try {
+                // First, check to see if we already have a pending alert that needs to be written.
+                if (handshakeException != null) {
+                    if (pendingOutboundEncryptedBytes() > 0) {
+                        // Need to finish writing the alert to the remote peer.
+                        return NEED_WRAP;
+                    }
+
+                    // We've finished writing the alert, just throw the exception.
+                    SSLException e = handshakeException;
+                    handshakeException = null;
+                    throw e;
+                }
+
                 int ssl_error_code = ssl.doHandshake();
                 switch (ssl_error_code) {
                     case SSL_ERROR_WANT_READ:
@@ -971,10 +995,19 @@ final class ConscryptEngine extends AbstractConscryptEngine implements NativeCry
                         // SSL_ERROR_NONE.
                     }
                 }
+            } catch (SSLException e) {
+                if (pendingOutboundEncryptedBytes() > 0) {
+                    // Delay throwing the exception since we appear to have an outbound alert
+                    // that needs to be written to the remote endpoint.
+                    handshakeException = e;
+                    return NEED_WRAP;
+                }
+
+                // There is no pending alert to write - just shutdown and throw.
+                sendSSLShutdown();
+                throw e;
             } catch (IOException e) {
-                // Shut down the SSL and rethrow the exception.  Users will need to drain any alerts
-                // from the SSL before closing.
-                closeAll();
+                sendSSLShutdown();
                 throw e;
             }
 
@@ -1146,7 +1179,6 @@ final class ConscryptEngine extends AbstractConscryptEngine implements NativeCry
 
             return bytesWritten;
         } catch (IOException e) {
-            closeAll();
             throw new SSLException(e);
         }
     }
@@ -1334,15 +1366,9 @@ final class ConscryptEngine extends AbstractConscryptEngine implements NativeCry
         }
     }
 
-    private void closeAll() {
+    private void closeAll() throws SSLException {
         closeOutbound();
         closeInbound();
-    }
-
-    private void freeIfDone() {
-        if (isInboundDone() && isOutboundDone()) {
-            closeAndFreeResources();
-        }
     }
 
     private SSLException newSslExceptionWithMessage(String err) {
@@ -1393,7 +1419,6 @@ final class ConscryptEngine extends AbstractConscryptEngine implements NativeCry
                     SSLEngineResult pendingNetResult =
                             readPendingBytesFromBIO(dst, 0, 0, HandshakeStatus.NOT_HANDSHAKING);
                     if (pendingNetResult != null) {
-                        freeIfDone();
                         return pendingNetResult;
                     }
                     return new SSLEngineResult(Status.CLOSED, getHandshakeStatusInternal(), 0, 0);
@@ -1522,7 +1547,7 @@ final class ConscryptEngine extends AbstractConscryptEngine implements NativeCry
                                                                 : NEED_WRAP_CLOSED;
                             default:
                                 // Everything else is considered as error
-                                closeAll();
+                                sendSSLShutdown();
                                 throw newSslExceptionWithMessage("SSL_write");
                         }
                     }
@@ -1577,13 +1602,6 @@ final class ConscryptEngine extends AbstractConscryptEngine implements NativeCry
                 default:
                     // Ignore
             }
-        }
-    }
-
-    @Override
-    public void serverCertificateRequested() throws IOException {
-        synchronized (ssl) {
-            ssl.configureServerCertificate();
         }
     }
 

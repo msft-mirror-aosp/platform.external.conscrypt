@@ -62,6 +62,8 @@ import org.mockito.Mockito;
 public class ConscryptEngineTest {
     private static final int MESSAGE_SIZE = 4096;
     private static final int LARGE_MESSAGE_SIZE = 16413;
+    private static final String[] CIPHERS = TestUtils.getCommonCipherSuites();
+    private static final String RENEGOTIATION_CIPHER = CIPHERS[CIPHERS.length - 1];
 
     /**
      * @hide This class is not part of the Android public SDK API
@@ -163,23 +165,10 @@ public class ConscryptEngineTest {
         clientEngine.closeOutbound();
         serverEngine.closeOutbound();
 
-        // After closing the outbound direction, a shutdown alert should still be pending
-        assertFalse(clientEngine.isOutboundDone());
-        assertFalse(serverEngine.isOutboundDone());
-
-        ByteBuffer drain =
-                bufferType.newBuffer(Math.max(clientEngine.getSession().getPacketBufferSize(),
-                        serverEngine.getSession().getPacketBufferSize()));
-        clientEngine.wrap(ByteBuffer.wrap(new byte[0]), drain);
-        drain.clear();
-        serverEngine.wrap(ByteBuffer.wrap(new byte[0]), drain);
-
-        assertTrue(clientEngine.isOutboundDone());
-        assertTrue(serverEngine.isOutboundDone());
-
-        // The inbound directions should still be open
         assertFalse(clientEngine.isInboundDone());
+        assertTrue(clientEngine.isOutboundDone());
         assertFalse(serverEngine.isInboundDone());
+        assertTrue(serverEngine.isOutboundDone());
     }
 
     @Test
@@ -372,8 +361,7 @@ public class ConscryptEngineTest {
         exchangeMessage(newMessage(MESSAGE_SIZE), clientEngine, serverEngine);
 
         // Trigger a renegotiation from the server and send a message back from Server->Client
-        String[] ciphers = TestUtils.getCommonCipherSuites();
-        serverEngine.setEnabledCipherSuites(new String[] {ciphers[ciphers.length - 1]});
+        serverEngine.setEnabledCipherSuites(new String[] {RENEGOTIATION_CIPHER});
         serverEngine.beginHandshake();
         doHandshake(false);
 
@@ -435,7 +423,7 @@ public class ConscryptEngineTest {
             Provider provider, TestKeyStore keyStore, boolean client) {
         SSLContext serverContext = newContext(provider, keyStore);
         SSLEngine engine = serverContext.createSSLEngine();
-        engine.setEnabledCipherSuites(TestUtils.getCommonCipherSuites());
+        engine.setEnabledCipherSuites(CIPHERS);
         engine.setUseClientMode(client);
         if (Conscrypt.isConscrypt(engine)) {
             Conscrypt.setBufferAllocator(engine, bufferType.allocator);
@@ -488,9 +476,7 @@ public class ConscryptEngineTest {
                 case OK: {
                     break;
                 }
-                default: {
-                    throw new RuntimeException("Unexpected SSLEngine status: " + status);
-                }
+                default: { throw new RuntimeException("Unexpected SSLEngine status: " + status); }
             }
             int newPos = decryptedBuffer.position();
             int bytesProduced = unwrapResult.bytesProduced();

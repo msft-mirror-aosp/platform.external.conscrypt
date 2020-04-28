@@ -17,14 +17,13 @@
 
 package com.android.org.conscrypt;
 
+import static javax.net.ssl.SSLEngineResult.Status.OK;
 import static com.android.org.conscrypt.SSLUtils.EngineStates.STATE_CLOSED;
 import static com.android.org.conscrypt.SSLUtils.EngineStates.STATE_HANDSHAKE_COMPLETED;
 import static com.android.org.conscrypt.SSLUtils.EngineStates.STATE_HANDSHAKE_STARTED;
 import static com.android.org.conscrypt.SSLUtils.EngineStates.STATE_NEW;
 import static com.android.org.conscrypt.SSLUtils.EngineStates.STATE_READY;
 import static com.android.org.conscrypt.SSLUtils.EngineStates.STATE_READY_HANDSHAKE_CUT_THROUGH;
-import static javax.net.ssl.SSLEngineResult.Status.CLOSED;
-import static javax.net.ssl.SSLEngineResult.Status.OK;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -260,7 +259,6 @@ class ConscryptEngineSocket extends OpenSSLSocketImpl {
                 }
             }
         } catch (SSLException e) {
-            drainOutgoingQueue();
             close();
             throw e;
         } catch (IOException e) {
@@ -548,18 +546,6 @@ class ConscryptEngineSocket extends OpenSSLSocketImpl {
         }
     }
 
-    private void drainOutgoingQueue() {
-        try {
-            while (engine.pendingOutboundEncryptedBytes() > 0) {
-                out.writeInternal(EMPTY_BUFFER);
-                // Always flush handshake frames immediately.
-                out.flushInternal();
-            }
-        } catch (IOException e) {
-            // Ignore
-        }
-    }
-
     private OutputStream getUnderlyingOutputStream() throws IOException {
         return super.getOutputStream();
     }
@@ -617,13 +603,14 @@ class ConscryptEngineSocket extends OpenSSLSocketImpl {
             init();
 
             // Need to loop through at least once to enable handshaking where no application
-            // bytes are processed.
+            // bytes are
+            // processed.
             int len = buffer.remaining();
             SSLEngineResult engineResult;
             do {
                 target.clear();
                 engineResult = engine.wrap(buffer, target);
-                if (engineResult.getStatus() != OK && engineResult.getStatus() != CLOSED) {
+                if (engineResult.getStatus() != OK) {
                     throw new SSLException("Unexpected engine result " + engineResult.getStatus());
                 }
                 if (target.position() != engineResult.bytesProduced()) {
@@ -746,7 +733,8 @@ class ConscryptEngineSocket extends OpenSSLSocketImpl {
             startHandshake();
             synchronized (readLock) {
                 init();
-                return fromEngine.remaining();
+                return fromEngine.remaining()
+                        + (fromSocket.hasRemaining() || socketInputStream.available() > 0 ? 1 : 0);
             }
         }
 

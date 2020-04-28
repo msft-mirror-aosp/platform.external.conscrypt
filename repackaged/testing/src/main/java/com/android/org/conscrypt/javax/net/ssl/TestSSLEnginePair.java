@@ -75,7 +75,10 @@ public final class TestSSLEnginePair implements Closeable {
 
     /**
      * Create a new connected server/client engine pair within a
-     * existing SSLContext.
+     * existing SSLContext. Optionally specify clientCipherSuites to
+     * allow forcing new SSLSession to test SSLSessionContext
+     * caching. Optionally specify serverCipherSuites for testing
+     * cipher suite negotiation.
      */
     public static SSLEngine[] connect(final TestSSLContext c,
             Hooks hooks,
@@ -112,10 +115,16 @@ public final class TestSSLEnginePair implements Closeable {
                 break;
             }
 
-            boolean progress =
-                    handshakeStep(client, clientToServer, serverToClient, scratch, clientFinished);
-            progress |=
-                    handshakeStep(server, serverToClient, clientToServer, scratch, serverFinished);
+            boolean progress = handshakeCompleted(client,
+                    clientToServer,
+                    serverToClient,
+                    scratch,
+                    clientFinished);
+            progress |= handshakeCompleted(server,
+                    serverToClient,
+                    clientToServer,
+                    scratch,
+                    serverFinished);
             if (!progress) {
                 break;
             }
@@ -154,8 +163,11 @@ public final class TestSSLEnginePair implements Closeable {
         }
     }
 
-    public static boolean handshakeStep(SSLEngine engine, ByteBuffer output, ByteBuffer input,
-            ByteBuffer scratch, boolean[] finished) throws IOException {
+    private static boolean handshakeCompleted(SSLEngine engine,
+            ByteBuffer output,
+            ByteBuffer input,
+            ByteBuffer scratch,
+            boolean[] finished) throws IOException {
         try {
             // make the other side's output into our input
             input.flip();

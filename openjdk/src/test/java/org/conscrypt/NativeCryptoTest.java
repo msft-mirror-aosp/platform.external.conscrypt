@@ -878,13 +878,6 @@ public class NativeCryptoTest {
             // TODO(nathanmittler): Implement server-side caching for TLS < 1.3
             return 0;
         }
-
-        private boolean serverCertificateRequestedInvoked;
-
-        @Override
-        public void serverCertificateRequested() {
-          serverCertificateRequestedInvoked = true;
-        }
     }
 
     static class ClientHooks extends Hooks {
@@ -1100,8 +1093,6 @@ public class NativeCryptoTest {
         assertTrue(serverCallback.onNewSessionEstablishedInvoked);
         assertTrue(clientCallback.handshakeCompletedCalled);
         assertTrue(serverCallback.handshakeCompletedCalled);
-        assertFalse(clientCallback.serverCertificateRequestedInvoked);
-        assertTrue(serverCallback.serverCertificateRequestedInvoked);
     }
 
     @Test
@@ -1139,8 +1130,6 @@ public class NativeCryptoTest {
         assertTrue(serverCallback1.onNewSessionEstablishedInvoked);
         assertTrue(clientCallback1.handshakeCompletedCalled);
         assertTrue(serverCallback1.handshakeCompletedCalled);
-        assertFalse(clientCallback1.serverCertificateRequestedInvoked);
-        assertTrue(serverCallback1.serverCertificateRequestedInvoked);
 
         final long clientSessionContext =
                 clientCallback1.onNewSessionEstablishedSessionNativePointer;
@@ -1181,8 +1170,6 @@ public class NativeCryptoTest {
         assertTrue(serverCallback2.onNewSessionEstablishedInvoked);
         assertTrue(clientCallback2.handshakeCompletedCalled);
         assertTrue(serverCallback2.handshakeCompletedCalled);
-        assertFalse(clientCallback2.serverCertificateRequestedInvoked);
-        assertTrue(serverCallback2.serverCertificateRequestedInvoked);
 
         NativeCrypto.SSL_SESSION_free(clientSessionContext);
         NativeCrypto.SSL_SESSION_free(serverSessionContext);
@@ -1242,8 +1229,6 @@ public class NativeCryptoTest {
         assertTrue(serverCallback.onNewSessionEstablishedInvoked);
         assertTrue(clientCallback.handshakeCompletedCalled);
         assertTrue(serverCallback.handshakeCompletedCalled);
-        assertFalse(clientCallback.serverCertificateRequestedInvoked);
-        assertTrue(serverCallback.serverCertificateRequestedInvoked);
     }
 
     @Test
@@ -1354,8 +1339,6 @@ public class NativeCryptoTest {
         assertTrue(clientCallback.handshakeCompletedCalled);
         assertTrue(serverCallback.handshakeCompletedCalled);
         assertNull(sHooks.channelIdAfterHandshakeException);
-        assertFalse(clientCallback.serverCertificateRequestedInvoked);
-        assertTrue(serverCallback.serverCertificateRequestedInvoked);
         assertEqualByteArrays(CHANNEL_ID, sHooks.channelIdAfterHandshake);
     }
 
@@ -1392,8 +1375,6 @@ public class NativeCryptoTest {
         assertTrue(serverCallback.onNewSessionEstablishedInvoked);
         assertTrue(clientCallback.handshakeCompletedCalled);
         assertTrue(serverCallback.handshakeCompletedCalled);
-        assertFalse(clientCallback.serverCertificateRequestedInvoked);
-        assertTrue(serverCallback.serverCertificateRequestedInvoked);
         assertNull(sHooks.channelIdAfterHandshakeException);
         assertNull(sHooks.channelIdAfterHandshake);
     }
@@ -1431,8 +1412,6 @@ public class NativeCryptoTest {
         assertTrue(serverCallback.onNewSessionEstablishedInvoked);
         assertTrue(clientCallback.handshakeCompletedCalled);
         assertTrue(serverCallback.handshakeCompletedCalled);
-        assertFalse(clientCallback.serverCertificateRequestedInvoked);
-        assertTrue(serverCallback.serverCertificateRequestedInvoked);
         assertNull(sHooks.channelIdAfterHandshakeException);
         assertNull(sHooks.channelIdAfterHandshake);
     }
@@ -1469,8 +1448,6 @@ public class NativeCryptoTest {
         assertNull(clientCallback.clientPSKKeyRequestedIdentityHint);
         assertNull(serverCallback.serverPSKKeyRequestedIdentityHint);
         assertEquals("", serverCallback.serverPSKKeyRequestedIdentity);
-        assertFalse(clientCallback.serverCertificateRequestedInvoked);
-        assertTrue(serverCallback.serverCertificateRequestedInvoked);
     }
 
     @Test
@@ -1508,8 +1485,6 @@ public class NativeCryptoTest {
         assertEquals(sHooks.pskIdentityHint, clientCallback.clientPSKKeyRequestedIdentityHint);
         assertEquals(sHooks.pskIdentityHint, serverCallback.serverPSKKeyRequestedIdentityHint);
         assertEquals(cHooks.pskIdentity, serverCallback.serverPSKKeyRequestedIdentity);
-        assertFalse(clientCallback.serverCertificateRequestedInvoked);
-        assertTrue(serverCallback.serverCertificateRequestedInvoked);
     }
 
     @Test
@@ -1727,8 +1702,6 @@ public class NativeCryptoTest {
         assertTrue(serverCallback.onNewSessionEstablishedInvoked);
         assertTrue(clientCallback.handshakeCompletedCalled);
         assertTrue(serverCallback.handshakeCompletedCalled);
-        assertFalse(clientCallback.serverCertificateRequestedInvoked);
-        assertTrue(serverCallback.serverCertificateRequestedInvoked);
     }
 
     @Test

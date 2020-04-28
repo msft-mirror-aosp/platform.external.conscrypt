@@ -47,8 +47,8 @@ public abstract class OpenSSLContextImpl extends SSLContextSpi {
      */
     private static DefaultSSLContextImpl defaultSslContextImpl;
 
-    /** TLS protocols to enable by default. */
-    private final String[] protocols;
+    /** TLS algorithm to initialize all sockets. */
+    private final String[] algorithms;
 
     /** Client session cache. */
     private final ClientSessionContext clientSessionContext;
@@ -64,27 +64,19 @@ public abstract class OpenSSLContextImpl extends SSLContextSpi {
         return new TLSv13();
     }
 
-    OpenSSLContextImpl(String[] protocols) {
-        this.protocols = protocols;
+    OpenSSLContextImpl(String[] algorithms) {
+        this.algorithms = algorithms;
         clientSessionContext = new ClientSessionContext();
         serverSessionContext = new ServerSessionContext();
     }
 
-    // BEGIN Android-added: Restore missing constructor that is used by apps
-    @dalvik.annotation.compat.UnsupportedAppUsage
-    private OpenSSLContextImpl() throws GeneralSecurityException, IOException {
-        this(NativeCrypto.TLSV13_PROTOCOLS, true);
-    }
-    // END Android-added: Restore missing constructor that is used by apps
-
     /**
-     * Constuctor for the DefaultSSLContextImpl.  The unused boolean parameter is solely to
-     * indicate that this constructor is desired.
+     * Constuctor for the DefaultSSLContextImpl.
      */
-    OpenSSLContextImpl(String[] protocols, boolean unused)
-            throws GeneralSecurityException, IOException {
+    @dalvik.annotation.compat.UnsupportedAppUsage
+    OpenSSLContextImpl() throws GeneralSecurityException, IOException {
         synchronized (DefaultSSLContextImpl.class) {
-            this.protocols = null;
+            this.algorithms = null;
             if (defaultSslContextImpl == null) {
                 clientSessionContext = new ClientSessionContext();
                 serverSessionContext = new ServerSessionContext();
@@ -99,7 +91,7 @@ public abstract class OpenSSLContextImpl extends SSLContextSpi {
             }
             sslParameters = new SSLParametersImpl(defaultSslContextImpl.getKeyManagers(),
                     defaultSslContextImpl.getTrustManagers(), null, clientSessionContext,
-                    serverSessionContext, protocols);
+                    serverSessionContext, algorithms);
         }
     }
 
@@ -117,7 +109,7 @@ public abstract class OpenSSLContextImpl extends SSLContextSpi {
     public void engineInit(KeyManager[] kms, TrustManager[] tms, SecureRandom sr)
             throws KeyManagementException {
         sslParameters = new SSLParametersImpl(
-                kms, tms, sr, clientSessionContext, serverSessionContext, protocols);
+                kms, tms, sr, clientSessionContext, serverSessionContext, algorithms);
     }
 
     @Override

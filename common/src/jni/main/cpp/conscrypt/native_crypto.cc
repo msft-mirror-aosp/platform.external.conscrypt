@@ -3462,20 +3462,6 @@ static jlong NativeCrypto_EVP_aead_chacha20_poly1305(JNIEnv* env, jclass) {
     return reinterpret_cast<jlong>(ctx);
 }
 
-static jlong NativeCrypto_EVP_aead_aes_128_gcm_siv(JNIEnv* env, jclass) {
-    CHECK_ERROR_QUEUE_ON_RETURN;
-    const EVP_AEAD* ctx = EVP_aead_aes_128_gcm_siv();
-    JNI_TRACE("EVP_aead_aes_128_gcm_siv => ctx=%p", ctx);
-    return reinterpret_cast<jlong>(ctx);
-}
-
-static jlong NativeCrypto_EVP_aead_aes_256_gcm_siv(JNIEnv* env, jclass) {
-    CHECK_ERROR_QUEUE_ON_RETURN;
-    const EVP_AEAD* ctx = EVP_aead_aes_256_gcm_siv();
-    JNI_TRACE("EVP_aead_aes_256_gcm_siv => ctx=%p", ctx);
-    return reinterpret_cast<jlong>(ctx);
-}
-
 static jint NativeCrypto_EVP_AEAD_max_overhead(JNIEnv* env, jclass, jlong evpAeadRef) {
     CHECK_ERROR_QUEUE_ON_RETURN;
     const EVP_AEAD* evpAead = reinterpret_cast<const EVP_AEAD*>(evpAeadRef);
@@ -6256,37 +6242,6 @@ static int cert_cb(SSL* ssl, CONSCRYPT_UNUSED void* arg) {
     return 1;
 }
 
-static enum ssl_select_cert_result_t select_certificate_cb(const SSL_CLIENT_HELLO* client_hello) {
-    SSL* ssl = client_hello->ssl;
-    JNI_TRACE("ssl=%p select_certificate_cb_callback", ssl);
-
-    AppData* appData = toAppData(ssl);
-    JNIEnv* env = appData->env;
-    if (env == nullptr) {
-        CONSCRYPT_LOG_ERROR("AppData->env missing in select_certificate_cb");
-        JNI_TRACE("ssl=%p select_certificate_cb env error", ssl);
-        return ssl_select_cert_error;
-    }
-    if (env->ExceptionCheck()) {
-        JNI_TRACE("ssl=%p select_certificate_cb already pending exception", ssl);
-        return ssl_select_cert_error;
-    }
-
-    jobject sslHandshakeCallbacks = appData->sslHandshakeCallbacks;
-    jclass cls = env->GetObjectClass(sslHandshakeCallbacks);
-    jmethodID methodID = env->GetMethodID(cls, "serverCertificateRequested", "()V");
-
-    JNI_TRACE("ssl=%p select_certificate_cb calling serverCertificateRequested", ssl);
-    env->CallVoidMethod(sslHandshakeCallbacks, methodID);
-
-    if (env->ExceptionCheck()) {
-        JNI_TRACE("ssl=%p select_certificate_cb exception", ssl);
-        return ssl_select_cert_error;
-    }
-    JNI_TRACE("ssl=%p select_certificate_cb completed", ssl);
-    return ssl_select_cert_success;
-}
-
 /**
  * Pre-Shared Key (PSK) client callback.
  */
@@ -6584,7 +6539,6 @@ static jlong NativeCrypto_SSL_CTX_new(JNIEnv* env, jclass) {
 
     SSL_CTX_set_info_callback(sslCtx.get(), info_callback);
     SSL_CTX_set_cert_cb(sslCtx.get(), cert_cb, nullptr);
-    SSL_CTX_set_select_certificate_cb(sslCtx.get(), select_certificate_cb);
     if (conscrypt::trace::kWithJniTraceKeys) {
         SSL_CTX_set_keylog_callback(sslCtx.get(), debug_print_session_key);
     }
@@ -10058,8 +10012,6 @@ static JNINativeMethod sNativeCryptoMethods[] = {
         CONSCRYPT_NATIVE_METHOD(EVP_aead_aes_128_gcm, "()J"),
         CONSCRYPT_NATIVE_METHOD(EVP_aead_aes_256_gcm, "()J"),
         CONSCRYPT_NATIVE_METHOD(EVP_aead_chacha20_poly1305, "()J"),
-        CONSCRYPT_NATIVE_METHOD(EVP_aead_aes_128_gcm_siv, "()J"),
-        CONSCRYPT_NATIVE_METHOD(EVP_aead_aes_256_gcm_siv, "()J"),
         CONSCRYPT_NATIVE_METHOD(EVP_AEAD_max_overhead, "(J)I"),
         CONSCRYPT_NATIVE_METHOD(EVP_AEAD_nonce_length, "(J)I"),
         CONSCRYPT_NATIVE_METHOD(EVP_AEAD_CTX_seal, "(J[BI[BI[B[BII[B)I"),

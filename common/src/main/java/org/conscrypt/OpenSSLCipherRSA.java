@@ -49,7 +49,7 @@ import javax.crypto.spec.PSource;
 import javax.crypto.spec.SecretKeySpec;
 
 @Internal
-public abstract class OpenSSLCipherRSA extends CipherSpi {
+abstract class OpenSSLCipherRSA extends CipherSpi {
     /**
      * The current OpenSSL key we're operating on.
      */
@@ -422,7 +422,7 @@ public abstract class OpenSSLCipherRSA extends CipherSpi {
         }
     }
 
-    public static class OAEP extends OpenSSLCipherRSA {
+    static class OAEP extends OpenSSLCipherRSA {
         private long oaepMd;
         private int oaepMdSizeBytes;
 
