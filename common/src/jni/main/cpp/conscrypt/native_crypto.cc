@@ -3962,6 +3962,13 @@ static jobjectArray NativeCrypto_get_X509_GENERAL_NAME_stack(JNIEnv* env, jclass
         JNI_TRACE("get_X509_GENERAL_NAME_stack(%p, %d) => unknown type", x509, type);
         return nullptr;
     }
+    // TODO(https://github.com/google/conscrypt/issues/916): Handle errors, remove
+    // |ERR_clear_error|, and throw CertificateParsingException.
+    if (gn_stack == nullptr) {
+        JNI_TRACE("get_X509_GENERAL_NAME_stack(%p, %d) => null (no extension or error)", x509, type);
+        ERR_clear_error();
+        return nullptr;
+    }
 
     int count = static_cast<int>(sk_GENERAL_NAME_num(gn_stack));
     if (count <= 0) {
@@ -4189,9 +4196,9 @@ static jint NativeCrypto_get_X509_ex_flags(JNIEnv* env, jclass, jlong x509Ref,
     return static_cast<jint>(x509->ex_flags);
 }
 
-static jboolean NativeCrypto_X509_check_issued(JNIEnv* env, jclass, jlong x509Ref1,
-                                               CONSCRYPT_UNUSED jobject holder, jlong x509Ref2,
-                                               CONSCRYPT_UNUSED jobject holder2) {
+static jint NativeCrypto_X509_check_issued(JNIEnv* env, jclass, jlong x509Ref1,
+                                           CONSCRYPT_UNUSED jobject holder, jlong x509Ref2,
+                                           CONSCRYPT_UNUSED jobject holder2) {
     CHECK_ERROR_QUEUE_ON_RETURN;
     X509* x509_1 = reinterpret_cast<X509*>(static_cast<uintptr_t>(x509Ref1));
     X509* x509_2 = reinterpret_cast<X509*>(static_cast<uintptr_t>(x509Ref2));
@@ -4199,7 +4206,7 @@ static jboolean NativeCrypto_X509_check_issued(JNIEnv* env, jclass, jlong x509Re
 
     int ret = X509_check_issued(x509_1, x509_2);
     JNI_TRACE("X509_check_issued(%p, %p) => %d", x509_1, x509_2, ret);
-    return static_cast<jboolean>(ret);
+    return ret;
 }
 
 static void get_X509_signature(X509* x509, ASN1_BIT_STRING** signature) {
@@ -5714,10 +5721,14 @@ static jbooleanArray NativeCrypto_get_X509_ex_kusage(JNIEnv* env, jclass, jlong 
         return nullptr;
     }
 
+    // TODO(https://github.com/google/conscrypt/issues/916): Handle errors and remove
+    // |ERR_clear_error|. Note X509Certificate.getKeyUsage() cannot throw
+    // CertificateParsingException, so this needs to be checked earlier, e.g. in the constructor.
     bssl::UniquePtr<ASN1_BIT_STRING> bitStr(
             static_cast<ASN1_BIT_STRING*>(X509_get_ext_d2i(x509, NID_key_usage, nullptr, nullptr)));
     if (bitStr.get() == nullptr) {
         JNI_TRACE("get_X509_ex_kusage(%p) => null", x509);
+        ERR_clear_error();
         return nullptr;
     }
 
@@ -5736,10 +5747,13 @@ static jobjectArray NativeCrypto_get_X509_ex_xkusage(JNIEnv* env, jclass, jlong 
         return nullptr;
     }
 
+    // TODO(https://github.com/google/conscrypt/issues/916): Handle errors, remove
+    // |ERR_clear_error|, and throw CertificateParsingException.
     bssl::UniquePtr<STACK_OF(ASN1_OBJECT)> objArray(static_cast<STACK_OF(ASN1_OBJECT)*>(
             X509_get_ext_d2i(x509, NID_ext_key_usage, nullptr, nullptr)));
     if (objArray.get() == nullptr) {
         JNI_TRACE("get_X509_ex_xkusage(%p) => null", x509);
+        ERR_clear_error();
         return nullptr;
     }
 
