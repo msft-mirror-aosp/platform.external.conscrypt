@@ -354,8 +354,10 @@ java_sdk_library {
     sdk_version: "none",
     system_modules: "legacy-art-module-platform-api-stubs-system-modules",
 
-    // Don't copy any output files to the dist.
-    no_dist: true,
+    dist_group: "android",
+    dist_stem: "conscrypt-coreplatform",
+    // TODO: remove this when Conscrypt's @CorePlatformApi has been migrated to @SystemApi
+    unsafe_ignore_missing_latest_api: true,
 }
 
 // A library containing the public API stubs of the Conscrypt module.
@@ -639,8 +641,8 @@ java_test {
 // Device SDK exposed by the Conscrypt module.
 sdk {
     name: "conscrypt-module-sdk",
-    java_boot_libs: [
-        "conscrypt",
+    bootclasspath_fragments: [
+        "com.android.conscrypt-bootclasspath-fragment",
     ],
     java_sdk_libs: [
         "conscrypt.module.public.api",
