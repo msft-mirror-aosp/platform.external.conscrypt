@@ -149,9 +149,10 @@ public final class TrustManagerImpl extends X509ExtendedTrustManager {
     /**
      * Creates X509TrustManager based on a keystore
      */
-    @android.compat.annotation.UnsupportedAppUsage
-    @libcore.api.CorePlatformApi(status = libcore.api.CorePlatformApi.Status.STABLE)
-    public TrustManagerImpl(KeyStore keyStore) {
+    @android.compat.annotation
+            .UnsupportedAppUsage
+            @libcore.api.CorePlatformApi(status = libcore.api.CorePlatformApi.Status.STABLE)
+            public TrustManagerImpl(KeyStore keyStore) {
         this(keyStore, null);
     }
 
@@ -325,10 +326,11 @@ public final class TrustManagerImpl extends X509ExtendedTrustManager {
     /**
      * For backward compatibility with older Android API that used String for the hostname only.
      */
-    @android.compat.annotation.UnsupportedAppUsage
-    @libcore.api.CorePlatformApi(status = libcore.api.CorePlatformApi.Status.STABLE)
-    public List<X509Certificate> checkServerTrusted(
-            X509Certificate[] chain, String authType, String hostname) throws CertificateException {
+    @android.compat.annotation
+            .UnsupportedAppUsage
+            @libcore.api.CorePlatformApi(status = libcore.api.CorePlatformApi.Status.STABLE)
+            public List<X509Certificate> checkServerTrusted(X509Certificate[] chain,
+                    String authType, String hostname) throws CertificateException {
         return checkTrusted(chain, null /* ocspData */, null /* tlsSctData */, authType, hostname,
                 false);
     }
