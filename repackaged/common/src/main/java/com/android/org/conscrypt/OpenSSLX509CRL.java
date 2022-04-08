@@ -99,12 +99,12 @@ final class OpenSSLX509CRL extends X509CRL {
             bis.release();
         }
 
-        final List<OpenSSLX509CRL> certs = new ArrayList<>(certRefs.length);
-        for (long certRef : certRefs) {
-            if (certRef == 0) {
+        final List<OpenSSLX509CRL> certs = new ArrayList<OpenSSLX509CRL>(certRefs.length);
+        for (int i = 0; i < certRefs.length; i++) {
+            if (certRefs[i] == 0) {
                 continue;
             }
-            certs.add(new OpenSSLX509CRL(certRef));
+            certs.add(new OpenSSLX509CRL(certRefs[i]));
         }
         return certs;
     }
@@ -139,12 +139,12 @@ final class OpenSSLX509CRL extends X509CRL {
             bis.release();
         }
 
-        final List<OpenSSLX509CRL> certs = new ArrayList<>(certRefs.length);
-        for (long certRef : certRefs) {
-            if (certRef == 0) {
+        final List<OpenSSLX509CRL> certs = new ArrayList<OpenSSLX509CRL>(certRefs.length);
+        for (int i = 0; i < certRefs.length; i++) {
+            if (certRefs[i] == 0) {
                 continue;
             }
-            certs.add(new OpenSSLX509CRL(certRef));
+            certs.add(new OpenSSLX509CRL(certRefs[i]));
         }
         return certs;
     }
@@ -165,7 +165,7 @@ final class OpenSSLX509CRL extends X509CRL {
             return null;
         }
 
-        return new HashSet<>(Arrays.asList(critOids));
+        return new HashSet<String>(Arrays.asList(critOids));
     }
 
     @Override
@@ -190,7 +190,7 @@ final class OpenSSLX509CRL extends X509CRL {
             return null;
         }
 
-        return new HashSet<>(Arrays.asList(nonCritOids));
+        return new HashSet<String>(Arrays.asList(nonCritOids));
     }
 
     @Override
@@ -221,9 +221,9 @@ final class OpenSSLX509CRL extends X509CRL {
         }
     }
 
-    private void verifyInternal(PublicKey key, String sigProvider)
-            throws NoSuchAlgorithmException, InvalidKeyException, NoSuchProviderException,
-                   SignatureException {
+    private void verifyInternal(PublicKey key, String sigProvider) throws CRLException,
+            NoSuchAlgorithmException, InvalidKeyException, NoSuchProviderException,
+            SignatureException {
         String sigAlg = getSigAlgName();
         if (sigAlg == null) {
             sigAlg = getSigAlgOID();
@@ -330,7 +330,7 @@ final class OpenSSLX509CRL extends X509CRL {
             return null;
         }
 
-        final Set<OpenSSLX509CRLEntry> crlSet = new HashSet<>();
+        final Set<OpenSSLX509CRLEntry> crlSet = new HashSet<OpenSSLX509CRLEntry>();
         for (long entryRef : entryRefs) {
             try {
                 crlSet.add(new OpenSSLX509CRLEntry(entryRef));
@@ -343,7 +343,7 @@ final class OpenSSLX509CRL extends X509CRL {
     }
 
     @Override
-    public byte[] getTBSCertList() {
+    public byte[] getTBSCertList() throws CRLException {
         return NativeCrypto.get_X509_CRL_crl_enc(mContext, this);
     }
 
@@ -413,7 +413,6 @@ final class OpenSSLX509CRL extends X509CRL {
     }
 
     @Override
-    @SuppressWarnings("deprecation")
     protected void finalize() throws Throwable {
         try {
             if (mContext != 0) {
@@ -423,4 +422,5 @@ final class OpenSSLX509CRL extends X509CRL {
             super.finalize();
         }
     }
+
 }

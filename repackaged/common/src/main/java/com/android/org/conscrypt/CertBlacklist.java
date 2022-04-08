@@ -24,15 +24,15 @@ import java.security.PublicKey;
  * A set of certificates that are blacklisted from trust.
  * @hide This class is not part of the Android public SDK API
  */
-public interface CertBlocklist {
+public interface CertBlacklist {
 
     /**
      * Returns whether the given public key is in the blacklist.
      */
-    boolean isPublicKeyBlockListed(PublicKey publicKey);
+    boolean isPublicKeyBlackListed(PublicKey publicKey);
 
     /**
      * Returns whether the given serial number is in the blacklist.
      */
-    boolean isSerialNumberBlockListed(BigInteger serial);
+    boolean isSerialNumberBlackListed(BigInteger serial);
 }

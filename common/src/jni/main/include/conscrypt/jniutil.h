@@ -40,8 +40,6 @@ extern jclass integerClass;
 extern jclass inputStreamClass;
 extern jclass outputStreamClass;
 extern jclass stringClass;
-extern jclass byteBufferClass;
-extern jclass bufferClass;
 
 extern jfieldID nativeRef_address;
 
@@ -51,8 +49,6 @@ extern jmethodID integer_valueOfMethod;
 extern jmethodID openSslInputStream_readLineMethod;
 extern jmethodID outputStream_writeMethod;
 extern jmethodID outputStream_flushMethod;
-extern jmethodID buffer_positionMethod;
-extern jmethodID buffer_limitMethod;
 
 /**
  * Initializes the JNI constants from the environment.

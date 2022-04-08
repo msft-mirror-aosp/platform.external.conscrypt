@@ -17,7 +17,6 @@
 -dontnote org.apache.harmony.security.utils.AlgNameMapper
 -dontnote sun.security.x509.AlgorithmId
 
--dontwarn android.util.StatsEvent
 -dontwarn dalvik.system.BlockGuard
 -dontwarn dalvik.system.BlockGuard$Policy
 -dontwarn dalvik.system.CloseGuard

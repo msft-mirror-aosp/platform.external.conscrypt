@@ -16,7 +16,6 @@
 
 package android.util;
 
-@SuppressWarnings("unused")
 public final class StatsEvent {
     private StatsEvent(int atomId, StatsEvent.Buffer buffer, byte[] payload, int numBytes) {
         throw new RuntimeException("Stub!");

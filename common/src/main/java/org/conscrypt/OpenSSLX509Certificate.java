@@ -130,16 +130,16 @@ public final class OpenSSLX509Certificate extends X509Certificate {
         if (certRefs == null) {
             // To avoid returning a immutable list in only one path, we create an
             // empty list here instead of using Collections.emptyList()
-            return new ArrayList<>();
+            return new ArrayList<OpenSSLX509Certificate>();
         }
 
-        final List<OpenSSLX509Certificate> certs = new ArrayList<>(
+        final List<OpenSSLX509Certificate> certs = new ArrayList<OpenSSLX509Certificate>(
                 certRefs.length);
-        for (long certRef : certRefs) {
-            if (certRef == 0) {
+        for (int i = 0; i < certRefs.length; i++) {
+            if (certRefs[i] == 0) {
                 continue;
             }
-            certs.add(new OpenSSLX509Certificate(certRef));
+            certs.add(new OpenSSLX509Certificate(certRefs[i]));
         }
         return certs;
     }
@@ -177,13 +177,13 @@ public final class OpenSSLX509Certificate extends X509Certificate {
             bis.release();
         }
 
-        final List<OpenSSLX509Certificate> certs = new ArrayList<>(
+        final List<OpenSSLX509Certificate> certs = new ArrayList<OpenSSLX509Certificate>(
                 certRefs.length);
-        for (long certRef : certRefs) {
-            if (certRef == 0) {
+        for (int i = 0; i < certRefs.length; i++) {
+            if (certRefs[i] == 0) {
                 continue;
             }
-            certs.add(new OpenSSLX509Certificate(certRef));
+            certs.add(new OpenSSLX509Certificate(certRefs[i]));
         }
         return certs;
     }
@@ -215,7 +215,7 @@ public final class OpenSSLX509Certificate extends X509Certificate {
             return null;
         }
 
-        return new HashSet<>(Arrays.asList(critOids));
+        return new HashSet<String>(Arrays.asList(critOids));
     }
 
     @Override
@@ -239,7 +239,7 @@ public final class OpenSSLX509Certificate extends X509Certificate {
             return null;
         }
 
-        return new HashSet<>(Arrays.asList(nonCritOids));
+        return new HashSet<String>(Arrays.asList(nonCritOids));
     }
 
     @Override
@@ -248,14 +248,12 @@ public final class OpenSSLX509Certificate extends X509Certificate {
     }
 
     @Override
-    @SuppressWarnings("JdkObsolete")  // Needed for API compatibility
     public void checkValidity() throws CertificateExpiredException,
             CertificateNotYetValidException {
         checkValidity(new Date());
     }
 
     @Override
-    @SuppressWarnings("JdkObsolete")  // Needed for API compatibility
     public void checkValidity(Date date) throws CertificateExpiredException,
             CertificateNotYetValidException {
         if (getNotBefore().compareTo(date) > 0) {
@@ -301,7 +299,7 @@ public final class OpenSSLX509Certificate extends X509Certificate {
 
     @Override
     public byte[] getTBSCertificate() throws CertificateEncodingException {
-        return NativeCrypto.get_X509_tbs_cert(mContext, this);
+        return NativeCrypto.get_X509_cert_info_enc(mContext, this);
     }
 
     @Override
@@ -378,7 +376,9 @@ public final class OpenSSLX509Certificate extends X509Certificate {
         return NativeCrypto.i2d_X509(mContext, this);
     }
 
-    private void verifyOpenSSL(OpenSSLKey pkey) throws CertificateException, SignatureException {
+    private void verifyOpenSSL(OpenSSLKey pkey) throws CertificateException,
+                                                       NoSuchAlgorithmException,
+                                                       InvalidKeyException, SignatureException {
         try {
             NativeCrypto.X509_verify(mContext, this, pkey.getNativeRef());
         } catch (RuntimeException e) {
@@ -388,9 +388,9 @@ public final class OpenSSLX509Certificate extends X509Certificate {
         }
     }
 
-    private void verifyInternal(PublicKey key, String sigProvider) throws
+    private void verifyInternal(PublicKey key, String sigProvider) throws CertificateException,
             NoSuchAlgorithmException, InvalidKeyException, NoSuchProviderException,
-            SignatureException, CertificateEncodingException {
+            SignatureException {
         final Signature sig;
         if (sigProvider == null) {
             sig = Signature.getInstance(getSigAlgName());
@@ -414,7 +414,7 @@ public final class OpenSSLX509Certificate extends X509Certificate {
             return;
         }
 
-        verifyInternal(key, null);
+        verifyInternal(key, (String) null);
     }
 
     @Override
@@ -468,8 +468,8 @@ public final class OpenSSLX509Certificate extends X509Certificate {
         try {
             OpenSSLKey pkey = new OpenSSLKey(NativeCrypto.X509_get_pubkey(mContext, this));
             return pkey.getPublicKey();
-        } catch (NoSuchAlgorithmException | InvalidKeyException ignored) {
-            // Ignored
+        } catch (NoSuchAlgorithmException ignored) {
+        } catch (InvalidKeyException ignored) {
         }
 
         /* Try generating the key using other Java providers. */
@@ -478,8 +478,8 @@ public final class OpenSSLX509Certificate extends X509Certificate {
         try {
             KeyFactory kf = KeyFactory.getInstance(oid);
             return kf.generatePublic(new X509EncodedKeySpec(encoded));
-        } catch (NoSuchAlgorithmException | InvalidKeySpecException ignored) {
-            // Ignored
+        } catch (NoSuchAlgorithmException ignored) {
+        } catch (InvalidKeySpecException ignored) {
         }
 
         /*
@@ -502,7 +502,7 @@ public final class OpenSSLX509Certificate extends X509Certificate {
     }
 
     @Override
-    public List<String> getExtendedKeyUsage() {
+    public List<String> getExtendedKeyUsage() throws CertificateParsingException {
         String[] extUsage = NativeCrypto.get_X509_ex_xkusage(mContext, this);
         if (extUsage == null) {
             return null;
@@ -516,9 +516,9 @@ public final class OpenSSLX509Certificate extends X509Certificate {
             return null;
         }
 
-        Collection<List<?>> coll = new ArrayList<>(altNameArray.length);
-        for (Object[] objects : altNameArray) {
-            coll.add(Collections.unmodifiableList(Arrays.asList(objects)));
+        Collection<List<?>> coll = new ArrayList<List<?>>(altNameArray.length);
+        for (int i = 0; i < altNameArray.length; i++) {
+            coll.add(Collections.unmodifiableList(Arrays.asList(altNameArray[i])));
         }
 
         return Collections.unmodifiableCollection(coll);
@@ -567,14 +567,19 @@ public final class OpenSSLX509Certificate extends X509Certificate {
     }
 
     /**
-     * Returns a re-encoded TBSCertificate with the extension identified by oid removed.
+     * Delete an extension.
+     *
+     * A modified copy of the certificate is returned. The original object
+     * is unchanged.
+     * If the extension is not present, an unmodified copy is returned.
      */
-    public byte[] getTBSCertificateWithoutExtension(String oid) {
-        return NativeCrypto.get_X509_tbs_cert_without_ext(mContext, this, oid);
+    public OpenSSLX509Certificate withDeletedExtension(String oid) {
+        OpenSSLX509Certificate copy = new OpenSSLX509Certificate(NativeCrypto.X509_dup(mContext, this), notBefore, notAfter);
+        NativeCrypto.X509_delete_ext(copy.getContext(), copy, oid);
+        return copy;
     }
 
     @Override
-    @SuppressWarnings("deprecation")
     protected void finalize() throws Throwable {
         try {
             if (mContext != 0) {

@@ -429,7 +429,7 @@ abstract class NativeSslSession {
                 }
 
                 @Override
-                public Certificate[] getPeerCertificates() {
+                public Certificate[] getPeerCertificates() throws SSLPeerUnverifiedException {
                     throw new UnsupportedOperationException();
                 }
 
@@ -439,13 +439,13 @@ abstract class NativeSslSession {
                 }
 
                 @Override
-                @SuppressWarnings("deprecation")
-                public X509Certificate[] getPeerCertificateChain() {
+                public X509Certificate[] getPeerCertificateChain()
+                        throws SSLPeerUnverifiedException {
                     throw new UnsupportedOperationException();
                 }
 
                 @Override
-                public Principal getPeerPrincipal() {
+                public Principal getPeerPrincipal() throws SSLPeerUnverifiedException {
                     throw new UnsupportedOperationException();
                 }
 

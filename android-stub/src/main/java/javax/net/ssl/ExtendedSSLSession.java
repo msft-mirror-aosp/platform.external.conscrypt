@@ -23,7 +23,7 @@ import java.util.List;
  */
 public abstract class ExtendedSSLSession implements SSLSession {
 
-    protected ExtendedSSLSession() {
+    public ExtendedSSLSession() {
     }
 
     public abstract String[] getLocalSupportedSignatureAlgorithms();

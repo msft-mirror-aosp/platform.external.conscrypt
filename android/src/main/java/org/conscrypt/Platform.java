@@ -76,7 +76,6 @@ final class Platform {
             m_getCurveName = ECParameterSpec.class.getDeclaredMethod("getCurveName");
             m_getCurveName.setAccessible(true);
         } catch (Exception ignored) {
-            //Ignored
         }
     }
 
@@ -129,7 +128,6 @@ final class Platform {
             Method setCurveName = spec.getClass().getDeclaredMethod("setCurveName", String.class);
             setCurveName.invoke(spec, curveName);
         } catch (Exception ignored) {
-            //Ignored
         }
     }
 
@@ -250,9 +248,7 @@ final class Platform {
                 }
             }
         } catch (NoSuchMethodException ignored) {
-            //Ignored
         } catch (IllegalAccessException ignored) {
-            //Ignored
         } catch (InvocationTargetException e) {
             throw new RuntimeException(e.getCause());
         }
@@ -270,9 +266,7 @@ final class Platform {
                 }
             }
         } catch (NoSuchMethodException ignored) {
-            //Ignored
         } catch (IllegalAccessException ignored) {
-            //Ignored
         } catch (InvocationTargetException e) {
             throw new RuntimeException(e.getCause());
         }
@@ -316,9 +310,7 @@ final class Platform {
                 setParametersSniHostname(params, impl, socket);
             }
         } catch (NoSuchMethodException ignored) {
-            //Ignored
         } catch (IllegalAccessException ignored) {
-            //Ignored
         } catch (InvocationTargetException e) {
             throw new RuntimeException(e.getCause());
         }
@@ -345,9 +337,7 @@ final class Platform {
                 setParametersSniHostname(params, impl, engine);
             }
         } catch (NoSuchMethodException ignored) {
-            //Ignored
         } catch (IllegalAccessException ignored) {
-            //Ignored
         } catch (InvocationTargetException e) {
             throw new RuntimeException(e.getCause());
         }
@@ -373,7 +363,6 @@ final class Platform {
             try {
                 return Class.forName(klass);
             } catch (Exception ignored) {
-                //Ignored
             }
         }
         return null;
@@ -403,9 +392,7 @@ final class Platform {
             method.invoke(tm, chain, authType, argumentInstance);
             return true;
         } catch (NoSuchMethodException ignored) {
-            //Ignored
         } catch (IllegalAccessException ignored) {
-            //Ignored
         } catch (InvocationTargetException e) {
             if (e.getCause() instanceof CertificateException) {
                 throw(CertificateException) e.getCause();
@@ -843,7 +830,6 @@ final class Platform {
             }
             throw new RuntimeException(e);
         } catch (Exception ignored) {
-            //Ignored
         }
 
         // Newer OpenJDK style
@@ -865,7 +851,6 @@ final class Platform {
             }
             throw new RuntimeException(e);
         } catch (Exception ignored) {
-            //Ignored
         }
 
         return oid;
@@ -903,9 +888,7 @@ final class Platform {
             } catch (ClassNotFoundException ignore) {
                 // passthrough and return addr.getHostAddress()
             } catch (IllegalAccessException ignore) {
-                //Ignored
             } catch (NoSuchMethodException ignore) {
-                //Ignored
             }
         }
         return addr.getHostAddress();
@@ -923,7 +906,6 @@ final class Platform {
             } catch (InvocationTargetException e) {
                 throw new RuntimeException(e);
             } catch (Exception ignored) {
-                //Ignored
             }
         }
         return null;
@@ -1006,7 +988,7 @@ final class Platform {
         return null;
     }
 
-    static CertBlocklist newDefaultBlocklist() {
+    static CertBlacklist newDefaultBlacklist() {
         return null;
     }
 
@@ -1071,9 +1053,5 @@ final class Platform {
     private static void writeStats(boolean success, int protocol, int cipherSuite, int duration) {
         ConscryptStatsLog.write(
                 ConscryptStatsLog.TLS_HANDSHAKE_REPORTED, success, protocol, cipherSuite, duration);
-    }
-
-    public static boolean isJavaxCertificateSupported() {
-        return true;
     }
 }

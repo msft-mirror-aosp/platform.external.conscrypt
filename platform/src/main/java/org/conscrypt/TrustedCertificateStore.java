@@ -59,8 +59,9 @@ import org.conscrypt.io.IoUtils;
  * <p>In addition to supporting the {@code
  * TrustedCertificateKeyStoreSpi} implementation, {@code
  * TrustedCertificateStore} also provides the additional public
- * method  {@link #findIssuer} to allow  efficient lookup operations
- * for CAs again based on the file naming convention.
+ * methods {@link #isTrustAnchor} and {@link #findIssuer} to allow
+ * efficient lookup operations for CAs again based on the file naming
+ * convention.
  *
  * <p>The KeyChainService users the {@link installCertificate} and
  * {@link #deleteCertificateEntry} to install user CAs as well as
@@ -216,7 +217,6 @@ public class TrustedCertificateStore implements ConscryptCertStore {
         return getCertificateFile(deletedDir, x).exists();
     }
 
-    @SuppressWarnings("JdkObsolete") // Used in public API TrustedCertificateKeyStoreSpi
     public Date getCreationDate(String alias) {
         // containsAlias check ensures the later fileForAlias result
         // was not a deleted system cert.

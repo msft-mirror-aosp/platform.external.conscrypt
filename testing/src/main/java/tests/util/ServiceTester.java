@@ -44,13 +44,11 @@ public final class ServiceTester {
     void test(Provider p, String algorithm) throws Exception;
   }
 
-  private static final String SEPARATOR = "||";
   private final String service;
-  private final Set<Provider> providers = new LinkedHashSet<>();
-  private final Set<Provider> skipProviders = new HashSet<>();
-  private final Set<String> algorithms = new LinkedHashSet<>();
-  private final Set<String> skipAlgorithms = new HashSet<>();
-  private final Set<String> skipCombinations = new HashSet<>();
+  private Set<Provider> providers = new LinkedHashSet<>();
+  private Set<Provider> skipProviders = new HashSet<>();
+  private Set<String> algorithms = new LinkedHashSet<>();
+  private Set<String> skipAlgorithms = new HashSet<>();
 
   private ServiceTester(String service) {
     this.service = service;
@@ -130,18 +128,6 @@ public final class ServiceTester {
   }
 
   /**
-   * Causes the given combination of provider and algorithm to be omitted from this instance's
-   * testing. If no tested provider provides the given algorithm, does nothing.
-   */
-  public ServiceTester skipCombination(String provider, String algorithm) {
-    Provider p = Security.getProvider(provider);
-    if (p != null) {
-      skipCombinations.add(makeCombination(provider, algorithm));
-    }
-    return this;
-  }
-
-  /**
    * Runs the given test against the configured combination of providers and algorithms.  Continues
    * running all combinations even if some fail.  If any of the test runs fail, this throws
    * an exception with the details of the failure(s).
@@ -156,17 +142,14 @@ public final class ServiceTester {
     for (Provider p : providers) {
       if (algorithms.isEmpty()) {
         for (Provider.Service s : p.getServices()) {
-          if (s.getType().equals(service)
-              && !skipAlgorithms.contains(s.getAlgorithm())
-              && !shouldSkipCombination(p.getName(), s.getAlgorithm())) {
+          if (s.getType().equals(service) && !skipAlgorithms.contains(s.getAlgorithm())) {
             doTest(test, p, s.getAlgorithm(), errors);
           }
         }
       } else {
         algorithms.removeAll(skipAlgorithms);
         for (String algorithm : algorithms) {
-          if (p.getService(service, algorithm) != null
-              && !shouldSkipCombination(p.getName(), algorithm)) {
+          if (p.getService(service, algorithm) != null) {
             doTest(test, p, algorithm, errors);
           }
         }
@@ -176,14 +159,6 @@ public final class ServiceTester {
     if (errBuffer.size() > 0) {
       fail("Tests failed:\n\n" + errBuffer.toString());
     }
-  }
-
-  private String makeCombination(String provider, String algorithm) {
-    return provider + SEPARATOR + algorithm;
-  }
-
-  private boolean shouldSkipCombination(String provider, String algorithm) {
-    return skipCombinations.contains(makeCombination(provider, algorithm));
   }
 
   private void doTest(Test test, Provider p, String algorithm, PrintStream errors) {

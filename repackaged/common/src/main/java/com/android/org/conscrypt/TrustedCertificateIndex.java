@@ -36,13 +36,14 @@ import javax.security.auth.x500.X500Principal;
  * time instead of O(N).
  * @hide This class is not part of the Android public SDK API
  */
-@libcore.api.CorePlatformApi(status = libcore.api.CorePlatformApi.Status.STABLE)
+@libcore.api.CorePlatformApi
 @Internal
 public final class TrustedCertificateIndex {
+
     private final Map<X500Principal, List<TrustAnchor>> subjectToTrustAnchors
             = new HashMap<X500Principal, List<TrustAnchor>>();
 
-    @libcore.api.CorePlatformApi(status = libcore.api.CorePlatformApi.Status.STABLE)
+    @libcore.api.CorePlatformApi
     public TrustedCertificateIndex() {}
 
     public TrustedCertificateIndex(Set<TrustAnchor> anchors) {
@@ -55,7 +56,7 @@ public final class TrustedCertificateIndex {
         }
     }
 
-    @libcore.api.CorePlatformApi(status = libcore.api.CorePlatformApi.Status.STABLE)
+    @libcore.api.CorePlatformApi
     public TrustAnchor index(X509Certificate cert) {
         TrustAnchor anchor = new TrustAnchor(cert, null);
         index(anchor);
@@ -103,7 +104,7 @@ public final class TrustedCertificateIndex {
         }
     }
 
-    @libcore.api.CorePlatformApi(status = libcore.api.CorePlatformApi.Status.STABLE)
+    @libcore.api.CorePlatformApi
     public TrustAnchor findByIssuerAndSignature(X509Certificate cert) {
         X500Principal issuer = cert.getIssuerX500Principal();
         synchronized (subjectToTrustAnchors) {
@@ -124,14 +125,13 @@ public final class TrustedCertificateIndex {
                     cert.verify(publicKey);
                     return anchor;
                 } catch (Exception ignored) {
-                    // Ignored
                 }
             }
         }
         return null;
     }
 
-    @libcore.api.CorePlatformApi(status = libcore.api.CorePlatformApi.Status.STABLE)
+    @libcore.api.CorePlatformApi
     public TrustAnchor findBySubjectAndPublicKey(X509Certificate cert) {
         X500Principal subject = cert.getSubjectX500Principal();
         synchronized (subjectToTrustAnchors) {
@@ -178,7 +178,7 @@ public final class TrustedCertificateIndex {
         return null;
     }
 
-    @libcore.api.CorePlatformApi(status = libcore.api.CorePlatformApi.Status.STABLE)
+    @libcore.api.CorePlatformApi
     public Set<TrustAnchor> findAllByIssuerAndSignature(X509Certificate cert) {
         X500Principal issuer = cert.getIssuerX500Principal();
         synchronized (subjectToTrustAnchors) {
@@ -203,10 +203,10 @@ public final class TrustedCertificateIndex {
                     cert.verify(publicKey);
                     result.add(anchor);
                 } catch (Exception ignored) {
-                    // Ignored
                 }
             }
             return result;
         }
     }
+
 }

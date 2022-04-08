@@ -39,7 +39,6 @@ public final class IoUtils {
             } catch (RuntimeException rethrown) {
                 throw rethrown;
             } catch (Exception ignored) {
-                // Ignored
             }
         }
     }
@@ -52,7 +51,6 @@ public final class IoUtils {
             try {
                 socket.close();
             } catch (Exception ignored) {
-                // Ignored
             }
         }
     }

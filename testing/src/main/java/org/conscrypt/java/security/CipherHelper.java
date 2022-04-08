@@ -18,7 +18,6 @@ package org.conscrypt.java.security;
 
 import static org.junit.Assert.assertEquals;
 
-import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import javax.crypto.Cipher;
 
@@ -29,7 +28,7 @@ public abstract class CipherHelper<T> extends TestHelper<T> {
     private final int mode1;
     private final int mode2;
 
-    protected CipherHelper(String algorithmName, String plainData, int mode1, int mode2) {
+    public CipherHelper(String algorithmName, String plainData, int mode1, int mode2) {
         this.algorithmName = algorithmName;
         this.plainData = plainData;
         this.mode1 = mode1;
@@ -39,11 +38,11 @@ public abstract class CipherHelper<T> extends TestHelper<T> {
     public void test(Key encryptKey, Key decryptKey) throws Exception {
         Cipher cipher = Cipher.getInstance(algorithmName);
         cipher.init(mode1, encryptKey);
-        byte[] encrypted = cipher.doFinal(plainData.getBytes(StandardCharsets.UTF_8));
+        byte[] encrypted = cipher.doFinal(plainData.getBytes("UTF-8"));
 
         cipher.init(mode2, decryptKey);
         byte[] decrypted = cipher.doFinal(encrypted);
-        String decryptedString = new String(decrypted, StandardCharsets.UTF_8);
+        String decryptedString = new String(decrypted, "UTF-8");
 
         assertEquals("transformed data does not match", plainData, decryptedString);
     }

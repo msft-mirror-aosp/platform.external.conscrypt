@@ -41,6 +41,7 @@ abstract class AbstractSessionContext implements SSLSessionContext {
 
     final long sslCtxNativePointer = NativeCrypto.SSL_CTX_new();
 
+    @SuppressWarnings("serial")
     private final Map<ByteArray, NativeSslSession> sessions =
             new LinkedHashMap<ByteArray, NativeSslSession>() {
                 @Override
@@ -75,7 +76,7 @@ abstract class AbstractSessionContext implements SSLSessionContext {
         // Make a copy of the IDs.
         final Iterator<NativeSslSession> iter;
         synchronized (sessions) {
-            iter = Arrays.asList(sessions.values().toArray(new NativeSslSession[0]))
+            iter = Arrays.asList(sessions.values().toArray(new NativeSslSession[sessions.size()]))
                     .iterator();
         }
         return new Enumeration<byte[]>() {
@@ -187,7 +188,6 @@ abstract class AbstractSessionContext implements SSLSessionContext {
     }
 
     @Override
-    @SuppressWarnings("deprecation")
     protected void finalize() throws Throwable {
         try {
             NativeCrypto.SSL_CTX_free(sslCtxNativePointer, this);

@@ -26,9 +26,10 @@ import java.util.Set;
  * Android platform.
  * @hide This class is not part of the Android public SDK API
  */
-@libcore.api.CorePlatformApi(status = libcore.api.CorePlatformApi.Status.STABLE)
+@libcore.api.CorePlatformApi
 @Internal
 public interface ConscryptCertStore {
+
     /**
      * Returns a stored CA certificate with the same name and public key as the
      * provided {@link X509Certificate}.

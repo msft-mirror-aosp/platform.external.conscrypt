@@ -23,7 +23,6 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
@@ -38,7 +37,7 @@ import org.conscrypt.InternalUtil;
 
 @Internal
 public class CTLogStoreImpl implements CTLogStore {
-    private static final Charset US_ASCII = StandardCharsets.US_ASCII;
+    private static final Charset US_ASCII = Charset.forName("US-ASCII");
 
     /**
      * Thrown when parsing of a log file fails.
@@ -71,13 +70,12 @@ public class CTLogStoreImpl implements CTLogStore {
         defaultSystemLogDir = new File(ANDROID_ROOT + "/etc/security/ct_known_logs/");
     }
 
-    private final File userLogDir;
-    private final File systemLogDir;
-    private final CTLogInfo[] fallbackLogs;
+    private File userLogDir;
+    private File systemLogDir;
+    private CTLogInfo[] fallbackLogs;
 
-    private final HashMap<ByteBuffer, CTLogInfo> logCache = new HashMap<>();
-    private final Set<ByteBuffer> missingLogCache
-            = Collections.synchronizedSet(new HashSet<ByteBuffer>());
+    private HashMap<ByteBuffer, CTLogInfo> logCache = new HashMap<>();
+    private Set<ByteBuffer> missingLogCache = Collections.synchronizedSet(new HashSet<ByteBuffer>());
 
     public CTLogStoreImpl() {
         this(defaultUserLogDir,
@@ -118,17 +116,13 @@ public class CTLogStoreImpl implements CTLogStore {
             return loadLog(new File(userLogDir, filename));
         } catch (InvalidLogFileException e) {
             return null;
-        } catch (FileNotFoundException e) {
-            // Ignored
-        }
+        } catch (FileNotFoundException e) {}
 
         try {
             return loadLog(new File(systemLogDir, filename));
         } catch (InvalidLogFileException e) {
             return null;
-        } catch (FileNotFoundException e) {
-            // Ignored
-        }
+        } catch (FileNotFoundException e) {}
 
         // If the updateable logs dont exist then use the fallback logs.
         if (!userLogDir.exists()) {

@@ -38,9 +38,9 @@ final class OpenSSLECPublicKey implements ECPublicKey, OpenSSLKeyHolder {
 
     private static final String ALGORITHM = "EC";
 
-    private transient OpenSSLKey key;
+    protected transient OpenSSLKey key;
 
-    private transient OpenSSLECGroupContext group;
+    protected transient OpenSSLECGroupContext group;
 
     OpenSSLECPublicKey(OpenSSLECGroupContext group, OpenSSLKey key) {
         this.group = group;

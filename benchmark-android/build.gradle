@@ -69,7 +69,7 @@ if (androidSdkInstalled) {
                    libraries.bouncycastle_apis
 
         depsJarImplementation project(':conscrypt-benchmark-base'),
-                              project(path: ":conscrypt-testing", configuration: "runtime"),
+                              project(':conscrypt-testing'),
                               project(':conscrypt-libcore-stub')
 
         implementation 'com.google.caliper:caliper:1.0-beta-2'
@@ -83,7 +83,7 @@ if (androidSdkInstalled) {
     // the .aar and .jar contents before the actual archives are built. To do this we create a
     // configure task where the "from" contents is set inside a doLast stanza to ensure it is run
     // after the execution phase of the "assemble" task.
-    def configureDepsJar = tasks.register("configureDepsJar") {
+    task configureDepsJar {
         dependsOn assemble, \
                   configurations.depsJarApi.artifacts, \
                   configurations.depsJarImplementation.artifacts
@@ -124,12 +124,11 @@ if (androidSdkInstalled) {
         }
     }
 
-    def depsJar = tasks.register("depsJar", Jar) {
-        dependsOn configureDepsJar
+    task depsJar(type: Jar, dependsOn: configureDepsJar) {
         archiveName = 'bundled-deps.jar'
     }
 
-    def getAndroidDeviceAbi = tasks.register("getAndroidDeviceAbi") {
+    task getAndroidDeviceAbi {
         doLast {
             new ByteArrayOutputStream().withStream { os ->
                 def result = exec {
@@ -143,7 +142,7 @@ if (androidSdkInstalled) {
         }
     }
 
-    def configureExtractNativeLib = tasks.register("configureExtractNativeLib") {
+    task configureExtractNativeLib {
         dependsOn getAndroidDeviceAbi, depsJar
         doLast {
             extractNativeLib.from {
@@ -157,12 +156,11 @@ if (androidSdkInstalled) {
         }
     }
 
-    def extractNativeLib = tasks.register("extractNativeLib", Copy) {
-        dependsOn configureExtractNativeLib
+    task extractNativeLib(type: Copy, dependsOn: configureExtractNativeLib) {
         into "$buildDir/extracted-native-libs"
     }
 
-    def configurePushNativeLibrary = tasks.register("configurePushNativeLibrary") {
+    task configurePushNativeLibrary {
         dependsOn extractNativeLib
         doLast {
             project.ext.nativeLibPath = "/system/lib${androidDevice64Bit ? '64' : ''}/libconscrypt_jni.so"
@@ -170,13 +168,11 @@ if (androidSdkInstalled) {
         }
     }
 
-    def pushNativeLibrary = tasks.register("pushNativeLibrary", Exec) {
-        dependsOn configurePushNativeLibrary
+    task pushNativeLibrary(type: Exec, dependsOn: configurePushNativeLibrary) {
         pushNativeLibrary.executable android.adbExecutable
     }
 
-    def runBenchmarks = tasks.register("runBenchmarks") {
-        dependsOn depsJar, pushNativeLibrary
+    task runBenchmarks(dependsOn: [depsJar, pushNativeLibrary]) {
         doLast {
             // Execute the benchmarks
             exec {
@@ -206,7 +202,7 @@ if (androidSdkInstalled) {
     logger.warn('Android SDK has not been detected. The Android Benchmark module will not be built.')
 
     // Disable all tasks
-    tasks.configureEach {
+    tasks.collect {
         it.enabled = false
     }
 }

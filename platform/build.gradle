@@ -99,9 +99,7 @@ if (androidSdkInstalled) {
             exclude module: 'appcompat-v7'
             exclude module: 'design'
         })
-        testCompileOnly project(':conscrypt-android-stub'),
-                        project(':conscrypt-libcore-stub')
-        testImplementation project(path: ":conscrypt-testing", configuration: "runtime"),
+        testImplementation project(':conscrypt-testing'),
                            libraries.junit
         compileOnly project(':conscrypt-android-stub'),
                     project(':conscrypt-libcore-stub')
@@ -111,7 +109,7 @@ if (androidSdkInstalled) {
     }
 
     // Disable running the tests.
-    tasks.withType(Test).configureEach {
+    tasks.withType(Test){
         enabled = false
     }
 
@@ -119,7 +117,7 @@ if (androidSdkInstalled) {
     logger.warn('Android SDK has not been detected. The Android Platform module will not be built.')
 
     // Disable all tasks
-    tasks.configureEach {
+    tasks.collect {
         it.enabled = false
     }
 }

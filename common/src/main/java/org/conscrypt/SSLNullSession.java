@@ -116,7 +116,6 @@ final class SSLNullSession implements ConscryptSession, Cloneable {
     }
 
     @Override
-    @SuppressWarnings("deprecation") // Public API
     public javax.security.cert.X509Certificate[] getPeerCertificateChain()
             throws SSLPeerUnverifiedException {
         throw new SSLPeerUnverifiedException("No peer certificate");

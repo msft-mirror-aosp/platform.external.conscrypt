@@ -35,7 +35,7 @@ final class ShortBufferWithoutStackTraceException extends ShortBufferException {
         super(msg);
     }
 
-    @Override public synchronized Throwable fillInStackTrace() {
+    @Override public Throwable fillInStackTrace() {
         return this;
     }
 }

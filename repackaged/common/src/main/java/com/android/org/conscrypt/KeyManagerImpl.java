@@ -56,34 +56,36 @@ class KeyManagerImpl extends X509ExtendedKeyManager {
     /**
      * Creates Key manager
      */
-    @SuppressWarnings("JdkObsolete") // KeyStore#aliases is the only way of enumerating all entries
     KeyManagerImpl(KeyStore keyStore, char[] pwd) {
-        this.hash = new HashMap<>();
+        this.hash = new HashMap<String, PrivateKeyEntry>();
         final Enumeration<String> aliases;
         try {
             aliases = keyStore.aliases();
         } catch (KeyStoreException e) {
             return;
         }
-        while (aliases.hasMoreElements()) {
+        for (; aliases.hasMoreElements();) {
             final String alias = aliases.nextElement();
             try {
-                if (keyStore.entryInstanceOf(alias, PrivateKeyEntry.class)) {
-                    PrivateKeyEntry entry;
+                if (keyStore.entryInstanceOf(alias, KeyStore.PrivateKeyEntry.class)) {
+                    KeyStore.PrivateKeyEntry entry;
                     try {
-                        entry = (PrivateKeyEntry) keyStore.getEntry(
+                        entry = (KeyStore.PrivateKeyEntry) keyStore.getEntry(
                                 alias, new KeyStore.PasswordProtection(pwd));
                     } catch (UnsupportedOperationException e) {
                         // If the KeyStore doesn't support getEntry(), as Android Keystore
                         // doesn't, fall back to reading the two values separately.
                         PrivateKey key = (PrivateKey) keyStore.getKey(alias, pwd);
                         Certificate[] certs = keyStore.getCertificateChain(alias);
-                        entry = new PrivateKeyEntry(key, certs);
+                        entry = new KeyStore.PrivateKeyEntry(key, certs);
                     }
                     hash.put(alias, entry);
                 }
-            } catch (KeyStoreException | UnrecoverableEntryException
-                    | NoSuchAlgorithmException ignored) {
+            } catch (KeyStoreException ignored) {
+                // Ignored.
+            } catch (UnrecoverableEntryException ignored) {
+                // Ignored.
+            } catch (NoSuchAlgorithmException ignored) {
                 // Ignored.
             }
         }
@@ -158,7 +160,7 @@ class KeyManagerImpl extends X509ExtendedKeyManager {
             return null;
         }
         List<Principal> issuersList = (issuers == null) ? null : Arrays.asList(issuers);
-        ArrayList<String> found = new ArrayList<>();
+        ArrayList<String> found = new ArrayList<String>();
         for (final Map.Entry<String, PrivateKeyEntry> entry : hash.entrySet()) {
             final String alias = entry.getKey();
             final Certificate[] chain = entry.getValue().getCertificateChain();
@@ -223,7 +225,7 @@ class KeyManagerImpl extends X509ExtendedKeyManager {
             }
         }
         if (!found.isEmpty()) {
-            return found.toArray(new String[0]);
+            return found.toArray(new String[found.size()]);
         }
         return null;
     }
