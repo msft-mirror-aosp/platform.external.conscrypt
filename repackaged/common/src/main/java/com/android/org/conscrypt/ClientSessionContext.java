@@ -52,9 +52,10 @@ public final class ClientSessionContext extends AbstractSessionContext {
      * Applications should not use this method. Instead use {@link
      * Conscrypt#setClientSessionCache(SSLContext, SSLClientSessionCache)}.
      */
-    @android.compat.annotation.UnsupportedAppUsage
-    @libcore.api.CorePlatformApi(status = libcore.api.CorePlatformApi.Status.STABLE)
-    public void setPersistentCache(SSLClientSessionCache persistentCache) {
+    @android.compat.annotation
+            .UnsupportedAppUsage
+            @libcore.api.CorePlatformApi(status = libcore.api.CorePlatformApi.Status.STABLE)
+            public void setPersistentCache(SSLClientSessionCache persistentCache) {
         this.persistentCache = persistentCache;
     }
 

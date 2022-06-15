@@ -1,2 +1,7 @@
 # Bug component: 684135
-include platform/libcore:/OWNERS
+dauletz@google.com
+kroot@google.com
+mingaleev@google.com
+narayan@google.com
+ngeoffray@google.com
+prb@google.com
