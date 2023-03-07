@@ -281,6 +281,7 @@ java_library {
     visibility: [
         "//art/build",
         "//external/robolectric-shadows",
+        "//external/robolectric",
         "//frameworks/layoutlib",
     ],
     static_libs: [
@@ -501,11 +502,7 @@ cc_library_shared {
 
     cflags: ["-DJNI_JARJAR_PREFIX=com/android/"],
     header_libs: ["libnativehelper_header_only"],
-    shared_libs: [
-        "libcrypto",
-        "liblog",
-        "libssl",
-    ],
+    shared_libs: ["liblog"],
 
     target: {
         darwin: {
@@ -513,9 +510,19 @@ cc_library_shared {
         },
         android: {
             runtime_libs: ["libandroidio"],
+            shared_libs: [
+                "libcrypto",
+                "libssl",
+            ],
         },
         not_windows: {
             runtime_libs: ["libandroidio"],
+            // Link libcrypto and libssl statically on host, to ensure they stay current in
+            // the prebuilt that's included in conscrypt-module-test-exports.
+            static_libs: [
+                "libcrypto",
+                "libssl",
+            ],
         },
     },
     apex_available: [
@@ -537,6 +544,8 @@ java_library {
     visibility: [
         "//build/make/tools/signapk",
         "//tools/apksig",
+        "//external/robolectric/robolectric",
+        "//external/robolectric:__subpackages__",
     ],
     device_supported: false,
     host_supported: true,
@@ -710,7 +719,6 @@ module_exports {
                 // For use by CTS
                 "conscrypt-tests",
             ],
-            // TODO: Remove this when we resolve b/151303681.
             native_shared_libs: [
                 "libjavacrypto",
             ],
