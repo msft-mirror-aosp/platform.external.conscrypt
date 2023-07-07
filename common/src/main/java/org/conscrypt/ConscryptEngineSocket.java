@@ -196,8 +196,8 @@ class ConscryptEngineSocket extends OpenSSLSocketImpl implements SSLParametersIm
                     if (state == STATE_NEW) {
                         transitionTo(STATE_HANDSHAKE_STARTED);
                         engine.beginHandshake();
-                        in = new SSLInputStream();
-                        out = new SSLOutputStream();
+                        createInputStream();
+                        createOutputStream();
                     } else {
                         // We've either started the handshake already or have been closed.
                         // Do nothing in both cases.
@@ -209,9 +209,6 @@ class ConscryptEngineSocket extends OpenSSLSocketImpl implements SSLParametersIm
                 }
                 doHandshake();
             }
-        } catch (SSLException e) {
-            close();
-            throw e;
         } catch (IOException e) {
             close();
             throw e;
@@ -340,23 +337,30 @@ class ConscryptEngineSocket extends OpenSSLSocketImpl implements SSLParametersIm
     @Override
     public final InputStream getInputStream() throws IOException {
         checkOpen();
+        return createInputStream();
+    }
 
-        // Block waiting for a handshake without a lock held. It's possible that the socket
-        // is closed at this point. If that happens, we'll still return the input stream but
-        // all reads on it will throw.
-        waitForHandshake();
+    private SSLInputStream createInputStream() {
+        synchronized (stateLock) {
+            if (in == null) {
+                in = new SSLInputStream();
+            }
+        }
         return in;
     }
 
     @Override
     public final OutputStream getOutputStream() throws IOException {
         checkOpen();
+        return createOutputStream();
+    }
 
-        // Block waiting for a handshake without a lock held. It's possible that the socket
-        // is closed at this point. If that happens, we'll still return the input stream but
-        // all reads on it will throw.
-        waitForHandshake();
-
+    private SSLOutputStream createOutputStream() {
+        synchronized (stateLock) {
+            if (out == null) {
+                out = new SSLOutputStream();
+            }
+        }
         return out;
     }
 
@@ -662,7 +666,7 @@ class ConscryptEngineSocket extends OpenSSLSocketImpl implements SSLParametersIm
 
         @Override
         public void write(int b) throws IOException {
-            startHandshake();
+            waitForHandshake();
             synchronized (writeLock) {
                 write(new byte[] {(byte) b});
             }
@@ -670,7 +674,7 @@ class ConscryptEngineSocket extends OpenSSLSocketImpl implements SSLParametersIm
 
         @Override
         public void write(byte[] b) throws IOException {
-            startHandshake();
+            waitForHandshake();
             synchronized (writeLock) {
                 writeInternal(ByteBuffer.wrap(b));
             }
@@ -678,7 +682,7 @@ class ConscryptEngineSocket extends OpenSSLSocketImpl implements SSLParametersIm
 
         @Override
         public void write(byte[] b, int off, int len) throws IOException {
-            startHandshake();
+            waitForHandshake();
             synchronized (writeLock) {
                 writeInternal(ByteBuffer.wrap(b, off, len));
             }
@@ -723,7 +727,7 @@ class ConscryptEngineSocket extends OpenSSLSocketImpl implements SSLParametersIm
 
         @Override
         public void flush() throws IOException {
-            startHandshake();
+            waitForHandshake();
             synchronized (writeLock) {
                 flushInternal();
             }
@@ -789,7 +793,7 @@ class ConscryptEngineSocket extends OpenSSLSocketImpl implements SSLParametersIm
 
         @Override
         public int read() throws IOException {
-            startHandshake();
+            waitForHandshake();
             synchronized (readLock) {
                 // Handle returning of -1 if EOF is reached.
                 int count = read(singleByte, 0, 1);
@@ -806,7 +810,7 @@ class ConscryptEngineSocket extends OpenSSLSocketImpl implements SSLParametersIm
 
         @Override
         public int read(byte[] b) throws IOException {
-            startHandshake();
+            waitForHandshake();
             synchronized (readLock) {
                 return read(b, 0, b.length);
             }
@@ -814,7 +818,7 @@ class ConscryptEngineSocket extends OpenSSLSocketImpl implements SSLParametersIm
 
         @Override
         public int read(byte[] b, int off, int len) throws IOException {
-            startHandshake();
+            waitForHandshake();
             synchronized (readLock) {
                 return readUntilDataAvailable(b, off, len);
             }
@@ -822,7 +826,7 @@ class ConscryptEngineSocket extends OpenSSLSocketImpl implements SSLParametersIm
 
         @Override
         public int available() throws IOException {
-            startHandshake();
+            waitForHandshake();
             synchronized (readLock) {
                 init();
                 return fromEngine.remaining();
