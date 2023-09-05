@@ -48,7 +48,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.security.auth.x500.X500Principal;
-import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -57,12 +56,20 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 /**
  * @hide This class is not part of the Android public SDK API
  */
 @SuppressWarnings("unused")
 @RunWith(Parameterized.class)
-public class TrustedCertificateStoreTest extends TestCase {
+public class TrustedCertificateStoreTest {
     private static final Random tempFileRandom = new Random();
 
     private static File dirTest;
@@ -413,7 +420,6 @@ public class TrustedCertificateStoreTest extends TestCase {
     private TrustedCertificateStore store;
 
     @Before
-    @Override
     public void setUp() throws Exception {
         dirTest = Files.createTempDirectory("cert-store-test").toFile();
         dirSystem = new File(dirTest, "system");
@@ -434,7 +440,6 @@ public class TrustedCertificateStoreTest extends TestCase {
     }
 
     @After
-    @Override
     public void tearDown() {
         cleanStore();
     }
@@ -832,14 +837,13 @@ public class TrustedCertificateStoreTest extends TestCase {
         assertFalse(store.isUserAddedCertificate(getCa2()));
     }
 
-    @Test
-    public void testSystemCaCertsUseCorrectFileNames() throws Exception {
+    // TODO(b/293296163): re-enable once https://r.android.com/2675835 ships via Mainline.
+    private void dontestSystemCaCertsUseCorrectFileNames() throws Exception {
         File dir = new File(System.getenv("ANDROID_ROOT") + "/etc/security/cacerts");
         useCorrectFileNamesTest(dir);
     }
 
-    @Test
-    public void testSystemCaCertsUseCorrectFileNamesUpdatable() throws Exception {
+    private void dontTestSystemCaCertsUseCorrectFileNamesUpdatable() throws Exception {
         File dir = new File("/apex/com.android.conscrypt/cacerts");
         useCorrectFileNamesTest(dir);
     }
