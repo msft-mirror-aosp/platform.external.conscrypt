@@ -43,6 +43,7 @@ import javax.crypto.ShortBufferException;
 import javax.net.ssl.SSLException;
 import javax.security.auth.x500.X500Principal;
 import org.conscrypt.OpenSSLX509CertificateFactory.ParsingException;
+import org.conscrypt.Platform;
 
 /**
  * Provides the Java side of our JNI glue for OpenSSL.
@@ -379,6 +380,47 @@ public final class NativeCrypto {
     static native void HMAC_UpdateDirect(NativeRef.HMAC_CTX ctx, long inPtr, int inLength);
 
     static native byte[] HMAC_Final(NativeRef.HMAC_CTX ctx);
+
+    // --- HPKE functions ------------------------------------------------------
+    static native byte[] EVP_HPKE_CTX_export(
+            NativeRef.EVP_HPKE_CTX ctx, byte[] exporterCtx, int length);
+
+    static native void EVP_HPKE_CTX_free(long ctx);
+
+    static native byte[] EVP_HPKE_CTX_open(
+            NativeRef.EVP_HPKE_CTX ctx, byte[] ciphertext, byte[] aad) throws BadPaddingException;
+
+    static native byte[] EVP_HPKE_CTX_seal(
+            NativeRef.EVP_HPKE_CTX ctx, byte[] plaintext, byte[] aad);
+
+    static native Object EVP_HPKE_CTX_setup_base_mode_recipient(
+            int kem, int kdf, int aead, byte[] privateKey, byte[] enc, byte[] info);
+
+    static Object EVP_HPKE_CTX_setup_base_mode_recipient(
+            HpkeSuite suite, byte[] privateKey, byte[] enc, byte[] info) {
+        return EVP_HPKE_CTX_setup_base_mode_recipient(
+                suite.getKem().getId(), suite.getKdf().getId(), suite.getAead().getId(),
+                privateKey, enc, info);
+    }
+
+    static native Object[] EVP_HPKE_CTX_setup_base_mode_sender(
+            int kem, int kdf, int aead, byte[] publicKey, byte[] info);
+
+    static Object[] EVP_HPKE_CTX_setup_base_mode_sender(
+            HpkeSuite suite, byte[] publicKey, byte[] info) {
+        return EVP_HPKE_CTX_setup_base_mode_sender(
+                suite.getKem().getId(), suite.getKdf().getId(), suite.getAead().getId(),
+                publicKey, info);
+    }
+    static native Object[] EVP_HPKE_CTX_setup_base_mode_sender_with_seed_for_testing(
+            int kem, int kdf, int aead, byte[] publicKey, byte[] info, byte[] seed);
+
+    static Object[] EVP_HPKE_CTX_setup_base_mode_sender_with_seed_for_testing(
+            HpkeSuite suite, byte[] publicKey, byte[] info, byte[] seed) {
+        return EVP_HPKE_CTX_setup_base_mode_sender_with_seed_for_testing(
+                suite.getKem().getId(), suite.getKdf().getId(), suite.getAead().getId(),
+                publicKey, info, seed);
+    }
 
     // --- RAND ----------------------------------------------------------------
 
@@ -737,8 +779,8 @@ public final class NativeCrypto {
     // --- SSL handling --------------------------------------------------------
 
     static final String OBSOLETE_PROTOCOL_SSLV3 = "SSLv3";
-    private static final String SUPPORTED_PROTOCOL_TLSV1 = "TLSv1";
-    private static final String SUPPORTED_PROTOCOL_TLSV1_1 = "TLSv1.1";
+    private static final String DEPRECATED_PROTOCOL_TLSV1 = "TLSv1";
+    private static final String DEPRECATED_PROTOCOL_TLSV1_1 = "TLSv1.1";
     private static final String SUPPORTED_PROTOCOL_TLSV1_2 = "TLSv1.2";
     static final String SUPPORTED_PROTOCOL_TLSV1_3 = "TLSv1.3";
 
@@ -970,32 +1012,39 @@ public final class NativeCrypto {
 
     /** Protocols to enable by default when "TLSv1.3" is requested. */
     static final String[] TLSV13_PROTOCOLS = new String[] {
-            SUPPORTED_PROTOCOL_TLSV1,
-            SUPPORTED_PROTOCOL_TLSV1_1,
             SUPPORTED_PROTOCOL_TLSV1_2,
             SUPPORTED_PROTOCOL_TLSV1_3,
     };
 
     /** Protocols to enable by default when "TLSv1.2" is requested. */
     static final String[] TLSV12_PROTOCOLS = new String[] {
-            SUPPORTED_PROTOCOL_TLSV1,
-            SUPPORTED_PROTOCOL_TLSV1_1,
             SUPPORTED_PROTOCOL_TLSV1_2,
     };
 
     /** Protocols to enable by default when "TLSv1.1" is requested. */
-    static final String[] TLSV11_PROTOCOLS = TLSV12_PROTOCOLS;
+    static final String[] TLSV11_PROTOCOLS = new String[] {
+            DEPRECATED_PROTOCOL_TLSV1,
+            DEPRECATED_PROTOCOL_TLSV1_1,
+            SUPPORTED_PROTOCOL_TLSV1_2,
+    };
 
     /** Protocols to enable by default when "TLSv1" is requested. */
     static final String[] TLSV1_PROTOCOLS = TLSV11_PROTOCOLS;
 
     static final String[] DEFAULT_PROTOCOLS = TLSV13_PROTOCOLS;
     private static final String[] SUPPORTED_PROTOCOLS = new String[] {
-            SUPPORTED_PROTOCOL_TLSV1,
-            SUPPORTED_PROTOCOL_TLSV1_1,
+            DEPRECATED_PROTOCOL_TLSV1,
+            DEPRECATED_PROTOCOL_TLSV1_1,
             SUPPORTED_PROTOCOL_TLSV1_2,
             SUPPORTED_PROTOCOL_TLSV1_3,
     };
+
+    public static String[] getDefaultProtocols() {
+        if (Platform.isTlsV1Deprecated()) {
+          return DEFAULT_PROTOCOLS.clone();
+        }
+        return SUPPORTED_PROTOCOLS.clone();
+    }
 
     static String[] getSupportedProtocols() {
         return SUPPORTED_PROTOCOLS.clone();
@@ -1044,9 +1093,9 @@ public final class NativeCrypto {
     }
 
     private static int getProtocolConstant(String protocol) {
-        if (protocol.equals(SUPPORTED_PROTOCOL_TLSV1)) {
+        if (protocol.equals(DEPRECATED_PROTOCOL_TLSV1)) {
             return NativeConstants.TLS1_VERSION;
-        } else if (protocol.equals(SUPPORTED_PROTOCOL_TLSV1_1)) {
+        } else if (protocol.equals(DEPRECATED_PROTOCOL_TLSV1_1)) {
             return NativeConstants.TLS1_1_VERSION;
         } else if (protocol.equals(SUPPORTED_PROTOCOL_TLSV1_2)) {
             return NativeConstants.TLS1_2_VERSION;
@@ -1065,8 +1114,8 @@ public final class NativeCrypto {
             if (protocol == null) {
                 throw new IllegalArgumentException("protocols contains null");
             }
-            if (!protocol.equals(SUPPORTED_PROTOCOL_TLSV1)
-                    && !protocol.equals(SUPPORTED_PROTOCOL_TLSV1_1)
+            if (!protocol.equals(DEPRECATED_PROTOCOL_TLSV1)
+                    && !protocol.equals(DEPRECATED_PROTOCOL_TLSV1_1)
                     && !protocol.equals(SUPPORTED_PROTOCOL_TLSV1_2)
                     && !protocol.equals(SUPPORTED_PROTOCOL_TLSV1_3)
                     && !protocol.equals(OBSOLETE_PROTOCOL_SSLV3)) {
@@ -1099,8 +1148,8 @@ public final class NativeCrypto {
             // problems when servers upgrade.  See https://github.com/google/conscrypt/issues/574
             // for more discussion.
             if (cipherSuite.equals(TLS_FALLBACK_SCSV)
-                    && (maxProtocol.equals(SUPPORTED_PROTOCOL_TLSV1)
-                        || maxProtocol.equals(SUPPORTED_PROTOCOL_TLSV1_1))) {
+                    && (maxProtocol.equals(DEPRECATED_PROTOCOL_TLSV1)
+                        || maxProtocol.equals(DEPRECATED_PROTOCOL_TLSV1_1))) {
                 SSL_set_mode(ssl, ssl_holder, NativeConstants.SSL_MODE_SEND_FALLBACK_SCSV);
                 continue;
             }
