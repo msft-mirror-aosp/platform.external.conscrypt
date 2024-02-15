@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.conscrypt.TestUtils;
+
 /**
  * This class defines expected string names for protocols, key types,
  * client and server auth types, cipher suites.
@@ -163,6 +165,14 @@ public final class StandardNames {
             Arrays.asList(SSL_CONTEXT_PROTOCOLS_DEFAULT, "TLS", "TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"));
     public static final Set<String> SSL_CONTEXT_PROTOCOLS_WITH_DEFAULT_CONFIG = new HashSet<String>(
             Arrays.asList(SSL_CONTEXT_PROTOCOLS_DEFAULT, "TLS", "TLSv1.3"));
+    // Deprecated TLS protocols... May or may not be present or enabled.
+    public static final Set<String> SSL_CONTEXT_PROTOCOLS_DEPRECATED = new HashSet<>();
+    static {
+        if (TestUtils.isTlsV1Deprecated()) {
+            SSL_CONTEXT_PROTOCOLS_DEPRECATED.add("TLSv1");
+            SSL_CONTEXT_PROTOCOLS_DEPRECATED.add("TLSv1.1");
+        }
+    }
 
     public static final Set<String> KEY_TYPES = new HashSet<String>(
             Arrays.asList("RSA", "DSA", "DH_RSA", "DH_DSA", "EC", "EC_EC", "EC_RSA"));
@@ -409,10 +419,13 @@ public final class StandardNames {
      * assertSupportedProtocols additionally verifies that all
      * supported protocols where in the input array.
      */
-    private static void assertSupportedProtocols(Set<String> expected, String[] protocols) {
-        Set<String> remainingProtocols = assertValidProtocols(expected, protocols);
+    private static void assertSupportedProtocols(Set<String> valid, String[] protocols) {
+        Set<String> remainingProtocols = assertValidProtocols(valid, protocols);
+
+        // TODO(prb) Temporarily ignore TLSv1.x: See comment for assertSSLContextEnabledProtocols()
+        remainingProtocols.removeAll(SSL_CONTEXT_PROTOCOLS_DEPRECATED);
+
         assertEquals("Missing protocols", Collections.EMPTY_SET, remainingProtocols);
-        assertEquals(expected.size(), protocols.length);
     }
 
     /**
@@ -453,9 +466,16 @@ public final class StandardNames {
     }
 
     public static void assertSSLContextEnabledProtocols(String version, String[] protocols) {
-        assertEquals("For protocol \"" + version + "\"",
-                Arrays.toString(SSL_CONTEXT_PROTOCOLS_ENABLED.get(version)),
-                Arrays.toString(protocols));
+        Set<String> expected = new HashSet<>(
+            Arrays.asList(SSL_CONTEXT_PROTOCOLS_ENABLED.get(version)));
+        Set<String> actual = new HashSet<>(Arrays.asList(protocols));
+
+        // Ignore deprecated protocols, which are set earlier based
+        // on Platform.isTlsV1Deprecated().
+        expected.removeAll(SSL_CONTEXT_PROTOCOLS_DEPRECATED);
+        actual.removeAll(SSL_CONTEXT_PROTOCOLS_DEPRECATED);
+
+        assertEquals("For protocol \"" + version + "\"", expected, actual);
     }
 
     /**

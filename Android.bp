@@ -346,6 +346,7 @@ java_sdk_library {
     ],
     srcs: [
         ":conscrypt_java_files",
+        ":conscrypt_public_api_files",
     ],
     api_dir: "api/platform",
     api_only: true,
@@ -354,6 +355,8 @@ java_sdk_library {
     },
     droiddoc_options: [
         "--hide-annotation libcore.api.Hide",
+        // Include the "public" API in the "platform" API.
+        "--show-unannotated",
         "--show-single-annotation libcore.api.CorePlatformApi\\(status=libcore.api.CorePlatformApi.Status.STABLE\\)",
     ],
     hostdex: true,
@@ -567,6 +570,31 @@ java_library {
     min_sdk_version: "S",
 }
 
+// Interim library for accessing pseudo-JCA Conscrypt APIs such as HPKE until
+// public APIs are available.  No stability guarentees, so limited visibility
+// in order to track users.
+java_library {
+    name: "conscrypt-lite",
+    visibility: [
+        "//external/conscrypt:__subpackages__",
+    ],
+    device_supported: true,
+    host_supported: true,
+    srcs: [
+        "common/src/main/java/**/ArrayUtils.java",
+        "common/src/main/java/**/DuckTypedHpkeSpi.java",
+        "common/src/main/java/**/Hkdf.java",
+        "common/src/main/java/**/HpkeContext.java",
+        "common/src/main/java/**/HpkeContextRecipient.java",
+        "common/src/main/java/**/HpkeContextSender.java",
+        "common/src/main/java/**/HpkeSpi.java",
+        "common/src/main/java/**/HpkeSuite.java",
+        "common/src/main/java/**/Internal.java",
+        "common/src/main/java/**/XdhKeySpec.java",
+    ],
+    jarjar_rules: "conscrypt-lite-jarjar-rules.txt",
+}
+
 // Static unbundled Conscrypt crypto JNI library
 cc_library_static {
     name: "libconscrypt_static",
@@ -594,6 +622,7 @@ java_test {
     visibility: [
         "//cts/tests/libcore/luni",
         "//external/conscrypt/apex/tests",
+        "//libcore",
     ],
     hostdex: true,
     srcs: [
@@ -735,40 +764,4 @@ module_exports {
             ],
         },
     },
-}
-
-java_api_contribution {
-    name: "conscrypt-module-intra-core-stubs",
-    api_surface: "intra-core",
-    api_file: "api/intra/current.txt",
-    visibility: [
-        "//build/orchestrator/apis",
-    ],
-}
-
-java_api_contribution {
-    name: "conscrypt-module-public-stubs",
-    api_surface: "public",
-    api_file: "api/public/current.txt",
-    visibility: [
-        "//build/orchestrator/apis",
-    ],
-}
-
-java_api_contribution {
-    name: "conscrypt-module-platform-stubs",
-    api_surface: "core-platform",
-    api_file: "api/platform/current.txt",
-    visibility: [
-        "//build/orchestrator/apis",
-    ],
-}
-
-java_api_contribution {
-    name: "conscrypt-module-lib-stubs",
-    api_surface: "module-lib",
-    api_file: "api/public/module-lib-current.txt",
-    visibility: [
-        "//build/orchestrator/apis",
-    ],
 }

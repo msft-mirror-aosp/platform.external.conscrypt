@@ -46,6 +46,7 @@ public abstract class OpenSSLMac extends MacSpi {
      * Holds a dummy buffer for writing single bytes to the digest.
      */
     private final byte[] singleByte = new byte[1];
+    protected boolean initialized = false;
 
     private OpenSSLMac(int size) {
         this.size = size;
@@ -82,7 +83,12 @@ public abstract class OpenSSLMac extends MacSpi {
             throw new InvalidKeyException("key cannot be encoded");
         }
 
-        resetContext();
+        try {
+            resetContext();
+        } catch (RuntimeException e) {
+            throw new InvalidKeyException("invalid key", e);
+        }
+        initialized = true;
     }
 
     @Override
@@ -139,6 +145,9 @@ public abstract class OpenSSLMac extends MacSpi {
 
     @Override
     protected void engineReset() {
+        if (!initialized) {
+            return;
+        }
         resetContext();
     }
 
