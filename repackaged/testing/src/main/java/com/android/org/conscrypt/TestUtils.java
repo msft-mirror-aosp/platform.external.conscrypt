@@ -316,6 +316,15 @@ public final class TestUtils {
         throw ex;
     }
 
+    // Return a Class by name or null
+    public static Class<?> findClass(String name) {
+        try {
+            return Class.forName(name);
+        } catch (ClassNotFoundException ignored) {
+            return null;
+        }
+    }
+
     static SSLSocketFactory setUseEngineSocket(
             SSLSocketFactory conscryptFactory, boolean useEngineSocket) {
         try {
@@ -813,6 +822,10 @@ public final class TestUtils {
         return name.startsWith("macosx") || name.startsWith("osx");
     }
 
+    public static void assumeXecClassesAvailable() {
+        Assume.assumeTrue(findClass("java.security.spec.XECPrivateKeySpec") != null);
+    }
+
     // Find base method via reflection due to possible version skew on Android
     // and visibility issues when building with Gradle.
     public static boolean isTlsV1Deprecated() {
@@ -822,6 +835,20 @@ public final class TestUtils {
                     .invoke(null);
         } catch (NoSuchMethodException e) {
             return false;
+        } catch (ClassNotFoundException | IllegalAccessException | InvocationTargetException e) {
+            throw new IllegalStateException("Reflection failure", e);
+        }
+    }
+
+    // Find base method via reflection due to possible version skew on Android
+    // and visibility issues when building with Gradle.
+    public static boolean isTlsV1Supported() {
+        try {
+            return (Boolean) conscryptClass("Platform")
+                    .getDeclaredMethod("isTlsV1Supported")
+                    .invoke(null);
+        } catch (NoSuchMethodException e) {
+            return true;
         } catch (ClassNotFoundException | IllegalAccessException | InvocationTargetException e) {
             throw new IllegalStateException("Reflection failure", e);
         }
