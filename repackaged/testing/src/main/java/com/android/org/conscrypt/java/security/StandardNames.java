@@ -152,13 +152,19 @@ public final class StandardNames {
         if (!IS_RI) {
             provideCipherPaddings("AES", new String[] {"PKCS7Padding"});
         }
-
-        provideSslContextEnabledProtocols("TLS", TLSVersion.TLSv1, TLSVersion.TLSv13);
-        provideSslContextEnabledProtocols("TLSv1", TLSVersion.TLSv1, TLSVersion.TLSv12);
-        provideSslContextEnabledProtocols("TLSv1.1", TLSVersion.TLSv1, TLSVersion.TLSv12);
-        provideSslContextEnabledProtocols("TLSv1.2", TLSVersion.TLSv1, TLSVersion.TLSv12);
-        provideSslContextEnabledProtocols("TLSv1.3", TLSVersion.TLSv1, TLSVersion.TLSv13);
-        provideSslContextEnabledProtocols("Default", TLSVersion.TLSv1, TLSVersion.TLSv13);
+        if (TestUtils.isTlsV1Supported()) {
+            provideSslContextEnabledProtocols("TLS", TLSVersion.TLSv1, TLSVersion.TLSv13);
+            provideSslContextEnabledProtocols("TLSv1", TLSVersion.TLSv1, TLSVersion.TLSv12);
+            provideSslContextEnabledProtocols("TLSv1.1", TLSVersion.TLSv1, TLSVersion.TLSv12);
+            provideSslContextEnabledProtocols("TLSv1.2", TLSVersion.TLSv1, TLSVersion.TLSv12);
+            provideSslContextEnabledProtocols("TLSv1.3", TLSVersion.TLSv1, TLSVersion.TLSv13);
+            provideSslContextEnabledProtocols("Default", TLSVersion.TLSv1, TLSVersion.TLSv13);
+        } else {
+            provideSslContextEnabledProtocols("TLS", TLSVersion.TLSv12, TLSVersion.TLSv13);
+            provideSslContextEnabledProtocols("TLSv1.2", TLSVersion.TLSv12, TLSVersion.TLSv12);
+            provideSslContextEnabledProtocols("TLSv1.3", TLSVersion.TLSv12, TLSVersion.TLSv13);
+            provideSslContextEnabledProtocols("Default", TLSVersion.TLSv12, TLSVersion.TLSv13);
+        }
     }
 
     public static final String SSL_CONTEXT_PROTOCOLS_DEFAULT = "Default";
@@ -185,8 +191,15 @@ public final class StandardNames {
         }
     }
 
-    public static final Set<String> SSL_SOCKET_PROTOCOLS =
-            new HashSet<String>(Arrays.asList("TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"));
+    public static final Set<String> SSL_SOCKET_PROTOCOLS = new HashSet<>();
+    static {
+        SSL_SOCKET_PROTOCOLS.add("TLSv1.2");
+        SSL_SOCKET_PROTOCOLS.add("TLSv1.3");
+        if (TestUtils.isTlsV1Supported()) {
+            SSL_SOCKET_PROTOCOLS.add("TLSv1");
+            SSL_SOCKET_PROTOCOLS.add("TLSv1.1");
+        }
+    }
 
     private enum TLSVersion {
         SSLv3("SSLv3"),
