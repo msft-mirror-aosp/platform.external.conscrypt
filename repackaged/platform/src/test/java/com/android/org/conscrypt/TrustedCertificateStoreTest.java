@@ -17,6 +17,14 @@
 
 package com.android.org.conscrypt;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import com.android.org.conscrypt.java.security.TestKeyStore;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -55,14 +63,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 /**
  * @hide This class is not part of the Android public SDK API
@@ -837,13 +837,14 @@ public class TrustedCertificateStoreTest {
         assertFalse(store.isUserAddedCertificate(getCa2()));
     }
 
-    // TODO(b/293296163): re-enable once https://r.android.com/2675835 ships via Mainline.
-    private void dontestSystemCaCertsUseCorrectFileNames() throws Exception {
+    @Test
+    public void testSystemCaCertsUseCorrectFileNames() throws Exception {
         File dir = new File(System.getenv("ANDROID_ROOT") + "/etc/security/cacerts");
         useCorrectFileNamesTest(dir);
     }
 
-    private void dontTestSystemCaCertsUseCorrectFileNamesUpdatable() throws Exception {
+    @Test
+    public void testSystemCaCertsUseCorrectFileNamesUpdatable() throws Exception {
         File dir = new File("/apex/com.android.conscrypt/cacerts");
         useCorrectFileNamesTest(dir);
     }

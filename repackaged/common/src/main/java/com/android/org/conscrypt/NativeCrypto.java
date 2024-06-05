@@ -44,7 +44,6 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.ShortBufferException;
 import javax.net.ssl.SSLException;
 import javax.security.auth.x500.X500Principal;
-import com.android.org.conscrypt.Platform;
 
 /**
  * Provides the Java side of our JNI glue for OpenSSL.
@@ -381,6 +380,8 @@ public final class NativeCrypto {
 
     static native byte[] CMAC_Final(NativeRef.CMAC_CTX ctx);
 
+    static native void CMAC_Reset(NativeRef.CMAC_CTX ctx);
+
     // --- HMAC functions ------------------------------------------------------
 
     static native long HMAC_CTX_new();
@@ -394,6 +395,8 @@ public final class NativeCrypto {
     static native void HMAC_UpdateDirect(NativeRef.HMAC_CTX ctx, long inPtr, int inLength);
 
     static native byte[] HMAC_Final(NativeRef.HMAC_CTX ctx);
+
+    static native void HMAC_Reset(NativeRef.HMAC_CTX ctx);
 
     // --- HPKE functions ------------------------------------------------------
     static native byte[] EVP_HPKE_CTX_export(
@@ -541,8 +544,8 @@ public final class NativeCrypto {
 
     static native byte[] X509_get_serialNumber(long x509ctx, OpenSSLX509Certificate holder);
 
-    static native void X509_verify(long x509ctx, OpenSSLX509Certificate holder, NativeRef.EVP_PKEY pkeyCtx)
-            throws BadPaddingException;
+    static native void X509_verify(long x509ctx, OpenSSLX509Certificate holder,
+            NativeRef.EVP_PKEY pkeyCtx) throws BadPaddingException, IllegalBlockSizeException;
 
     static native byte[] get_X509_tbs_cert(long x509ctx, OpenSSLX509Certificate holder);
 
@@ -811,9 +814,8 @@ public final class NativeCrypto {
 
     // --- SSL handling --------------------------------------------------------
 
-    static final String OBSOLETE_PROTOCOL_SSLV3 = "SSLv3";
-    private static final String DEPRECATED_PROTOCOL_TLSV1 = "TLSv1";
-    private static final String DEPRECATED_PROTOCOL_TLSV1_1 = "TLSv1.1";
+    static final String DEPRECATED_PROTOCOL_TLSV1 = "TLSv1";
+    static final String DEPRECATED_PROTOCOL_TLSV1_1 = "TLSv1.1";
     private static final String SUPPORTED_PROTOCOL_TLSV1_2 = "TLSv1.2";
     static final String SUPPORTED_PROTOCOL_TLSV1_3 = "TLSv1.3";
 
@@ -883,8 +885,11 @@ public final class NativeCrypto {
     static {
         if (loadError == null) {
             // If loadError is not null, it means the native code was not loaded, so
-            // get_cipher_names will throw UnsatisfiedLinkError.
-            String[] allCipherSuites = get_cipher_names("ALL:!DHE");
+            // get_cipher_names will throw UnsatisfiedLinkError. Populate the list of supported
+            // ciphers with BoringSSL's default, and also explicitly include 3DES.
+            // https://boringssl-review.googlesource.com/c/boringssl/+/59425 will remove 3DES
+            // from BoringSSL's default, but Conscrypt isn't quite ready to remove it yet.
+            String[] allCipherSuites = get_cipher_names("ALL:3DES");
 
             // get_cipher_names returns an array where even indices are the standard name and odd
             // indices are the OpenSSL name.
@@ -1050,6 +1055,12 @@ public final class NativeCrypto {
                     DEPRECATED_PROTOCOL_TLSV1_1,
             };
 
+    private static final String[] SUPPORTED_PROTOCOLS_TLSV1 = Platform.isTlsV1Supported()
+            ? new String[] {
+                DEPRECATED_PROTOCOL_TLSV1,
+                DEPRECATED_PROTOCOL_TLSV1_1,
+            } : new String[0];
+
     /** Protocols to enable by default when "TLSv1.3" is requested. */
     static final String[] TLSV13_PROTOCOLS = ArrayUtils.concatValues(
             ENABLED_PROTOCOLS_TLSV1, SUPPORTED_PROTOCOL_TLSV1_2, SUPPORTED_PROTOCOL_TLSV1_3);
@@ -1069,12 +1080,14 @@ public final class NativeCrypto {
     static final String[] TLSV1_PROTOCOLS = TLSV11_PROTOCOLS;
 
     static final String[] DEFAULT_PROTOCOLS = TLSV13_PROTOCOLS;
-    private static final String[] SUPPORTED_PROTOCOLS = new String[] {
-            DEPRECATED_PROTOCOL_TLSV1,
-            DEPRECATED_PROTOCOL_TLSV1_1,
+
+    // If we ever get a new protocol go look for tests which are skipped using
+    // assumeTlsV11Enabled()
+    private static final String[] SUPPORTED_PROTOCOLS = ArrayUtils.concatValues(
+            SUPPORTED_PROTOCOLS_TLSV1,
             SUPPORTED_PROTOCOL_TLSV1_2,
-            SUPPORTED_PROTOCOL_TLSV1_3,
-    };
+            SUPPORTED_PROTOCOL_TLSV1_3);
+
     public static String[] getDefaultProtocols() {
         if (Platform.isTlsV1Deprecated()) {
           return DEFAULT_PROTOCOLS.clone();
@@ -1150,11 +1163,7 @@ public final class NativeCrypto {
             if (protocol == null) {
                 throw new IllegalArgumentException("protocols contains null");
             }
-            if (!protocol.equals(DEPRECATED_PROTOCOL_TLSV1)
-                    && !protocol.equals(DEPRECATED_PROTOCOL_TLSV1_1)
-                    && !protocol.equals(SUPPORTED_PROTOCOL_TLSV1_2)
-                    && !protocol.equals(SUPPORTED_PROTOCOL_TLSV1_3)
-                    && !protocol.equals(OBSOLETE_PROTOCOL_SSLV3)) {
+            if (!Arrays.asList(SUPPORTED_PROTOCOLS).contains(protocol)) {
                 throw new IllegalArgumentException("protocol " + protocol + " is not supported");
             }
         }
@@ -1535,6 +1544,12 @@ public final class NativeCrypto {
      */
     static native void ENGINE_SSL_shutdown(long ssl, NativeSsl ssl_holder, SSLHandshakeCallbacks shc)
             throws IOException;
+
+    /**
+     * Generates a key from a password and salt using Scrypt.
+     */
+    static native byte[] Scrypt_generate_key(
+            byte[] password, byte[] salt, int n, int r, int p, int key_len);
 
     /**
      * Return {@code true} if BoringSSL has been built in FIPS mode.
