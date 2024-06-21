@@ -212,21 +212,12 @@ genrule {
     tools: ["conscrypt_generate_constants"],
 }
 
-genrule {
-    name: "conscrypt_generated_blocklist",
-    out: ["com/android/org/conscrypt/StaticBlocklist.java"],
-    srcs: ["constants/src/gen/java/cert_verify_proc_blocklist.inc"],
-    tool_files: ["constants/src/gen/java/generate_blocklist.awk"],
-    cmd: "awk -v package=com.android.org.conscrypt -f $(location constants/src/gen/java/generate_blocklist.awk) $(in) > $(out)",
-}
-
 filegroup {
     name: "conscrypt_java_files",
     srcs: [
         "repackaged/common/src/main/java/**/*.java",
         "repackaged/platform/src/main/java/**/*.java",
         ":conscrypt_generated_constants",
-        ":conscrypt_generated_blocklist",
     ],
 }
 
@@ -624,6 +615,26 @@ cc_library_static {
     ],
     sdk_version: "9",
     stl: "c++_shared",
+}
+
+
+java_library {
+    name: "conscrypt-test-support",
+    visibility: [
+        "//frameworks/base/apct-tests/perftests/core",
+    ],
+    device_supported: true,
+    host_supported: true,
+    srcs: [
+        "testing/src/main/java/**/*.java",
+        ":conscrypt-unbundled_generated_constants",
+    ],
+    libs: [
+        "junit",
+        "bouncycastle-unbundled",
+        "bouncycastle-bcpkix-unbundled",
+        "bouncycastle-ocsp-unbundled",
+    ],
 }
 
 // Make the conscrypt-tests library.
