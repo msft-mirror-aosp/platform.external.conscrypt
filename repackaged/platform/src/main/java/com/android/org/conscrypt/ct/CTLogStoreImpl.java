@@ -17,16 +17,16 @@
 
 package com.android.org.conscrypt.ct;
 
+import static java.nio.charset.StandardCharsets.US_ASCII;
+
 import com.android.org.conscrypt.Internal;
-import com.android.org.conscrypt.InternalUtil;
+import com.android.org.conscrypt.OpenSSLKey;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
@@ -42,8 +42,6 @@ import java.util.Set;
  */
 @Internal
 public class CTLogStoreImpl implements CTLogStore {
-    private static final Charset US_ASCII = StandardCharsets.US_ASCII;
-
     /**
      * Thrown when parsing of a log file fails.
      * @hide This class is not part of the Android public SDK API
@@ -65,17 +63,13 @@ public class CTLogStoreImpl implements CTLogStore {
         }
     }
 
-    private static final File defaultUserLogDir;
-    private static final File defaultSystemLogDir;
+    private static final File defaultLogDir;
     static {
         String ANDROID_DATA = System.getenv("ANDROID_DATA");
-        String ANDROID_ROOT = System.getenv("ANDROID_ROOT");
-        defaultUserLogDir = new File(ANDROID_DATA + "/misc/keychain/trusted_ct_logs/current/");
-        defaultSystemLogDir = new File(ANDROID_ROOT + "/etc/security/ct_known_logs/");
+        defaultLogDir = new File(ANDROID_DATA + "/misc/keychain/trusted_ct_logs/current/");
     }
 
-    private final File userLogDir;
-    private final File systemLogDir;
+    private final File logDir;
     private final CTLogInfo[] extraLogs;
 
     private final HashMap<ByteBuffer, CTLogInfo> logCache = new HashMap<>();
@@ -83,12 +77,11 @@ public class CTLogStoreImpl implements CTLogStore {
             Collections.synchronizedSet(new HashSet<ByteBuffer>());
 
     public CTLogStoreImpl() {
-        this(defaultUserLogDir, defaultSystemLogDir, null);
+        this(defaultLogDir, null);
     }
 
-    public CTLogStoreImpl(File userLogDir, File systemLogDir, CTLogInfo[] extraLogs) {
-        this.userLogDir = userLogDir;
-        this.systemLogDir = systemLogDir;
+    public CTLogStoreImpl(File logDir, CTLogInfo[] extraLogs) {
+        this.logDir = logDir;
         this.extraLogs = extraLogs;
     }
 
@@ -116,15 +109,7 @@ public class CTLogStoreImpl implements CTLogStore {
     private CTLogInfo findKnownLog(byte[] logId) {
         String filename = hexEncode(logId);
         try {
-            return loadLog(new File(userLogDir, filename));
-        } catch (InvalidLogFileException e) {
-            return null;
-        } catch (FileNotFoundException e) {
-            // Ignored
-        }
-
-        try {
-            return loadLog(new File(systemLogDir, filename));
+            return loadLog(new File(logDir, filename));
         } catch (InvalidLogFileException e) {
             return null;
         } catch (FileNotFoundException e) {
@@ -198,19 +183,19 @@ public class CTLogStoreImpl implements CTLogStore {
             throw new InvalidLogFileException("Missing one of 'description', 'url' or 'key'");
         }
 
+        byte[] pem = ("-----BEGIN PUBLIC KEY-----\n" + key + "\n-----END PUBLIC KEY-----")
+                             .getBytes(US_ASCII);
         PublicKey pubkey;
         try {
-            pubkey = InternalUtil.readPublicKeyPem(new ByteArrayInputStream(
-                    ("-----BEGIN PUBLIC KEY-----\n" +
-                        key + "\n" +
-                        "-----END PUBLIC KEY-----").getBytes(US_ASCII)));
+            pubkey = OpenSSLKey.fromPublicKeyPemInputStream(new ByteArrayInputStream(pem))
+                             .getPublicKey();
         } catch (InvalidKeyException e) {
             throw new InvalidLogFileException(e);
         } catch (NoSuchAlgorithmException e) {
             throw new InvalidLogFileException(e);
         }
 
-        return new CTLogInfo(pubkey, description, url);
+        return new CTLogInfo(pubkey, CTLogInfo.STATE_USABLE, description, url);
     }
 
     private final static char[] HEX_DIGITS = new char[] {
