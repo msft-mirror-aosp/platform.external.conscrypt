@@ -17,9 +17,10 @@
 
 package com.android.org.conscrypt.ct;
 
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import com.android.org.conscrypt.InternalUtil;
+import com.android.org.conscrypt.OpenSSLKey;
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -28,7 +29,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.nio.charset.StandardCharsets;
 import java.security.PublicKey;
 import junit.framework.TestCase;
 
@@ -69,13 +69,14 @@ public class CTLogStoreImplTest extends TestCase {
             LOGS = new CTLogInfo[logCount];
             LOGS_SERIALIZED = new String[logCount];
             for (int i = 0; i < logCount; i++) {
-                PublicKey key = InternalUtil.readPublicKeyPem(new ByteArrayInputStream(
-                        ("-----BEGIN PUBLIC KEY-----\n" + LOG_KEYS[i] + "\n"
-                                + "-----END PUBLIC KEY-----\n")
-                                .getBytes(StandardCharsets.US_ASCII)));
+                byte[] pem = ("-----BEGIN PUBLIC KEY-----\n" + LOG_KEYS[i]
+                        + "\n-----END PUBLIC KEY-----\n")
+                                     .getBytes(US_ASCII);
+                ByteArrayInputStream is = new ByteArrayInputStream(pem);
+                PublicKey key = OpenSSLKey.fromPublicKeyPemInputStream(is).getPublicKey();
                 String description = String.format("Test Log %d", i);
                 String url = String.format("log%d.example.com", i);
-                LOGS[i] = new CTLogInfo(key, description, url);
+                LOGS[i] = new CTLogInfo(key, CTLogInfo.STATE_USABLE, description, url);
                 LOGS_SERIALIZED[i] = String.format("description:%s\nurl:%s\nkey:%s",
                     description, url, LOG_KEYS[i]);
             }
@@ -86,7 +87,7 @@ public class CTLogStoreImplTest extends TestCase {
 
     public void test_loadLog() throws Exception {
         CTLogInfo log = CTLogStoreImpl.loadLog(
-                new ByteArrayInputStream(LOGS_SERIALIZED[0].getBytes(StandardCharsets.US_ASCII)));
+                new ByteArrayInputStream(LOGS_SERIALIZED[0].getBytes(US_ASCII)));
         assertEquals(LOGS[0], log);
 
         File testFile = writeFile(LOGS_SERIALIZED[0]);
@@ -96,8 +97,7 @@ public class CTLogStoreImplTest extends TestCase {
         // Empty log file, used to mask fallback logs
         assertEquals(null, CTLogStoreImpl.loadLog(new ByteArrayInputStream(new byte[0])));
         try {
-            CTLogStoreImpl.loadLog(new ByteArrayInputStream(
-                    "randomgarbage".getBytes(StandardCharsets.US_ASCII)));
+            CTLogStoreImpl.loadLog(new ByteArrayInputStream("randomgarbage".getBytes(US_ASCII)));
             fail("InvalidLogFileException not thrown");
         } catch (CTLogStoreImpl.InvalidLogFileException e) {}
 
@@ -111,29 +111,22 @@ public class CTLogStoreImplTest extends TestCase {
         File userDir = createTempDirectory();
         userDir.deleteOnExit();
 
-        File systemDir = createTempDirectory();
-        systemDir.deleteOnExit();
-
         CTLogInfo[] extraLogs = new CTLogInfo[] {LOGS[2], LOGS[3]};
 
-        CTLogStore store = new CTLogStoreImpl(userDir, systemDir, extraLogs);
+        CTLogStore store = new CTLogStoreImpl(userDir, extraLogs);
 
         /* Add logs 0 and 1 to the user and system directories respectively
          * Log 2 & 3 are part of the extras.
          * Log 4 is not in the store
          */
         File log0File = new File(userDir, LOG_FILENAMES[0]);
-        File log1File = new File(systemDir, LOG_FILENAMES[1]);
         File log4File = new File(userDir, LOG_FILENAMES[4]);
 
         writeFile(log0File, LOGS_SERIALIZED[0]);
-        writeFile(log1File, LOGS_SERIALIZED[1]);
 
         // Logs 01 are present, log 2 is in the fallback and unused, log 3 is present but masked,
         // log 4 is missing
         assertEquals(LOGS[0], store.getKnownLog(LOGS[0].getID()));
-        assertEquals(LOGS[1], store.getKnownLog(LOGS[1].getID()));
-        // Fallback logs are not used if the userDir is present.
         assertEquals(LOGS[2], store.getKnownLog(LOGS[2].getID()));
         assertEquals(LOGS[3], store.getKnownLog(LOGS[3].getID()));
         assertEquals(null, store.getKnownLog(LOGS[4].getID()));
