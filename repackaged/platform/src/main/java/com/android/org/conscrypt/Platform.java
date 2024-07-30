@@ -30,9 +30,11 @@ import com.android.org.conscrypt.ct.CTPolicy;
 import com.android.org.conscrypt.ct.CTPolicyImpl;
 import com.android.org.conscrypt.metrics.CipherSuite;
 import com.android.org.conscrypt.metrics.ConscryptStatsLog;
+import com.android.org.conscrypt.metrics.OptionalMethod;
 import com.android.org.conscrypt.metrics.Protocol;
 import dalvik.system.BlockGuard;
 import dalvik.system.CloseGuard;
+import dalvik.system.VMRuntime;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.lang.System;
@@ -69,6 +71,7 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.StandardConstants;
 import javax.net.ssl.X509ExtendedTrustManager;
 import javax.net.ssl.X509TrustManager;
+import libcore.net.NetworkSecurityPolicy;
 import sun.security.x509.AlgorithmId;
 
 final class Platform {
@@ -462,6 +465,10 @@ final class Platform {
     }
 
     static boolean isCTVerificationRequired(String hostname) {
+        if (Flags.certificateTransparencyPlatform()) {
+            return NetworkSecurityPolicy.getInstance()
+                    .isCertificateTransparencyVerificationRequired(hostname);
+        }
         return false;
     }
 
@@ -542,7 +549,31 @@ final class Platform {
         return true;
     }
 
+    public static boolean isTlsV1Filtered() {
+        Object targetSdkVersion = getTargetSdkVersion();
+        if ((targetSdkVersion != null) && ((int) targetSdkVersion > 34))
+            return false;
+        return true;
+    }
+
     public static boolean isTlsV1Supported() {
         return false;
+    }
+
+    static Object getTargetSdkVersion() {
+        try {
+            Class<?> vmRuntime = Class.forName("dalvik.system.VMRuntime");
+            if (vmRuntime == null) {
+                return null;
+            }
+            OptionalMethod getSdkVersion =
+                    new OptionalMethod(vmRuntime,
+                                        "getTargetSdkVersion");
+            return getSdkVersion.invokeStatic();
+        } catch (ClassNotFoundException e) {
+            return null;
+        } catch (NullPointerException e) {
+            return null;
+        }
     }
 }
