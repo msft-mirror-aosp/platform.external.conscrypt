@@ -17,33 +17,12 @@
 
 package com.android.org.conscrypt.ct;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import com.android.org.conscrypt.Internal;
 
 /**
  * @hide This class is not part of the Android public SDK API
  */
 @Internal
-public class CTVerificationResult {
-    private final ArrayList<VerifiedSCT> validSCTs = new ArrayList<VerifiedSCT>();
-    private final ArrayList<VerifiedSCT> invalidSCTs = new ArrayList<VerifiedSCT>();
-
-    public void add(VerifiedSCT result) {
-        if (result.status == VerifiedSCT.Status.VALID) {
-            validSCTs.add(result);
-        } else {
-            invalidSCTs.add(result);
-        }
-    }
-
-    public List<VerifiedSCT> getValidSCTs() {
-        return Collections.unmodifiableList(validSCTs);
-    }
-
-    public List<VerifiedSCT> getInvalidSCTs() {
-        return Collections.unmodifiableList(invalidSCTs);
-    }
+public interface LogStore {
+    LogInfo getKnownLog(byte[] logId);
 }
-
