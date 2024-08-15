@@ -16,11 +16,29 @@
 
 package org.conscrypt.ct;
 
-import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.conscrypt.Internal;
 
 @Internal
-public interface CTPolicy {
-    boolean doesResultConformToPolicy(CTVerificationResult result, String hostname,
-            X509Certificate[] chain);
+public class VerificationResult {
+    private final ArrayList<VerifiedSCT> validSCTs = new ArrayList<VerifiedSCT>();
+    private final ArrayList<VerifiedSCT> invalidSCTs = new ArrayList<VerifiedSCT>();
+
+    public void add(VerifiedSCT result) {
+        if (result.isValid()) {
+            validSCTs.add(result);
+        } else {
+            invalidSCTs.add(result);
+        }
+    }
+
+    public List<VerifiedSCT> getValidSCTs() {
+        return Collections.unmodifiableList(validSCTs);
+    }
+
+    public List<VerifiedSCT> getInvalidSCTs() {
+        return Collections.unmodifiableList(invalidSCTs);
+    }
 }
