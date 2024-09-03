@@ -508,6 +508,12 @@ java_sdk_library {
     sdk_version: "none",
     system_modules: "art-module-intra-core-api-stubs-system-modules",
 
+    // This module's output stubs contain apis defined in "conscrypt.module.public.api.stubs",
+    // but adding "conscrypt.module.public.api" as a dependency of this module leads to circular
+    // dependency and requires further bootstrapping. Thus, disable stubs generation from the
+    // api signature files and generate stubs from the source Java files instead.
+    build_from_text_stub: false,
+
     // Don't copy any output files to the dist.
     no_dist: true,
 }
@@ -534,7 +540,10 @@ cc_library_shared {
     name: "libjavacrypto",
     host_supported: true,
     defaults: ["libjavacrypto-defaults"],
-
+    visibility: [
+        ":__subpackages__",
+        "//art/tools/ahat",
+    ],
     cflags: ["-DJNI_JARJAR_PREFIX=com/android/"],
     header_libs: ["libnativehelper_header_only"],
     shared_libs: ["liblog"],
@@ -678,6 +687,11 @@ java_test {
         "repackaged/common/src/test/java/**/*.java",
         "repackaged/testing/src/main/java/**/*.java",
         "publicapi/src/test/java/**/*.java",
+    ],
+    exclude_srcs: [
+        // b/360775273.
+        "repackaged/platform/src/test/java/com/android/org/conscrypt/ct/*.java",
+        "repackaged/common/src/test/java/com/android/org/conscrypt/ct/*.java",
     ],
     java_resource_dirs: [
         // Resource directories do not need repackaging.
