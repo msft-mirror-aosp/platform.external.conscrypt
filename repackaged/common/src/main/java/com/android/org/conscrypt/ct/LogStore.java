@@ -23,7 +23,24 @@ import com.android.org.conscrypt.Internal;
  * @hide This class is not part of the Android public SDK API
  */
 @Internal
-public interface CTLogStore {
-    CTLogInfo getKnownLog(byte[] logId);
-}
+public interface LogStore {
+    /**
+     * @hide This class is not part of the Android public SDK API
+     */
+    public enum State {
+        UNINITIALIZED,
+        NOT_FOUND,
+        MALFORMED,
+        LOADED,
+        COMPLIANT,
+        NON_COMPLIANT,
+    }
 
+    void setPolicy(Policy policy);
+
+    State getState();
+
+    long getTimestamp();
+
+    LogInfo getKnownLog(byte[] logId);
+}
