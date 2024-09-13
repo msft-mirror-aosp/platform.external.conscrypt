@@ -185,6 +185,31 @@ cc_library_host_shared {
     },
 }
 
+aconfig_declarations {
+    name: "conscrypt-aconfig-flags",
+    package: "com.android.org.conscrypt",
+    container: "com.android.conscrypt",
+    srcs: ["conscrypt.aconfig"],
+}
+
+java_aconfig_library {
+    name: "conscrypt-aconfig-flags-lib",
+    aconfig_declarations: "conscrypt-aconfig-flags",
+    system_modules: "art-module-intra-core-api-stubs-system-modules",
+    libs: [
+        "aconfig-annotations-lib-sdk-none",
+        "unsupportedappusage",
+    ],
+    sdk_version: "none",
+    patch_module: "java.base",
+    apex_available: [
+        "com.android.conscrypt",
+    ],
+    min_sdk_version: "30",
+    installable: false,
+    visibility: ["//visibility:private"],
+}
+
 cc_binary_host {
     name: "conscrypt_generate_constants",
     srcs: ["constants/src/gen/cpp/generate_constants.cc"],
@@ -253,6 +278,9 @@ java_library {
     ],
 
     libs: ["unsupportedappusage"],
+    static_libs: [
+        "conscrypt-aconfig-flags-lib",
+    ],
 
     // Conscrypt can be updated independently from the other core libraries so it must only depend
     // on public SDK and intra-core APIs.
@@ -480,6 +508,12 @@ java_sdk_library {
     sdk_version: "none",
     system_modules: "art-module-intra-core-api-stubs-system-modules",
 
+    // This module's output stubs contain apis defined in "conscrypt.module.public.api.stubs",
+    // but adding "conscrypt.module.public.api" as a dependency of this module leads to circular
+    // dependency and requires further bootstrapping. Thus, disable stubs generation from the
+    // api signature files and generate stubs from the source Java files instead.
+    build_from_text_stub: false,
+
     // Don't copy any output files to the dist.
     no_dist: true,
 }
@@ -506,7 +540,10 @@ cc_library_shared {
     name: "libjavacrypto",
     host_supported: true,
     defaults: ["libjavacrypto-defaults"],
-
+    visibility: [
+        ":__subpackages__",
+        "//art/tools/ahat",
+    ],
     cflags: ["-DJNI_JARJAR_PREFIX=com/android/"],
     header_libs: ["libnativehelper_header_only"],
     shared_libs: ["liblog"],
@@ -617,7 +654,6 @@ cc_library_static {
     stl: "c++_shared",
 }
 
-
 java_library {
     name: "conscrypt-test-support",
     visibility: [
@@ -647,8 +683,12 @@ java_test {
     ],
     hostdex: true,
     srcs: [
-        "repackaged/platform/src/test/java/**/*.java",
-        "repackaged/common/src/test/java/**/*.java",
+        "repackaged/platform/src/test/java/com/android/org/conscrypt/TrustedCertificateStoreTest.java",
+        "repackaged/platform/src/test/java/com/android/org/conscrypt/metrics/*.java",
+        "repackaged/common/src/test/java/com/android/org/conscrypt/*.java",
+        "repackaged/common/src/test/java/com/android/org/conscrypt/metrics/*.java",
+        "repackaged/common/src/test/java/com/android/org/conscrypt/java/**/*.java",
+        "repackaged/common/src/test/java/com/android/org/conscrypt/javax/**/*.java",
         "repackaged/testing/src/main/java/**/*.java",
         "publicapi/src/test/java/**/*.java",
     ],
@@ -688,6 +728,46 @@ java_test {
             enabled: false,
         },
     },
+    java_version: "1.8",
+}
+
+// Conscrypt private tests. These tests relies on private APIs. Prefer adding
+// your test to conscrypt-tests if possible, as these will be executed as part
+// of CTS (see CtsLibcoreTestCases).
+android_test {
+    name: "ConscryptPrivateTestCases",
+    srcs: [
+        "repackaged/platform/src/test/java/com/android/org/conscrypt/ct/*.java",
+        "repackaged/platform/src/test/java/com/android/org/conscrypt/CertBlocklistTest.java",
+        "repackaged/common/src/test/java/com/android/org/conscrypt/ct/*.java",
+        "repackaged/testing/src/main/java/**/*.java",
+    ],
+
+    java_resource_dirs: [
+        // Resource directories do not need repackaging.
+        "openjdk/src/test/resources",
+        "common/src/test/resources",
+    ],
+
+    platform_apis: true,
+    manifest: "AndroidManifest-private.xml",
+    test_config: "AndroidTest-private.xml",
+    libs: [
+        "conscrypt",
+        "core-test-rules",
+        "junit",
+        "mockito-target-minus-junit4",
+        "framework-statsd.stubs.module_lib",
+    ],
+
+    static_libs: [
+        "androidx.test.runner",
+        "androidx.test.rules",
+        "bouncycastle-unbundled",
+        "bouncycastle-bcpkix-unbundled",
+        "bouncycastle-ocsp-unbundled",
+    ],
+
     java_version: "1.8",
 }
 

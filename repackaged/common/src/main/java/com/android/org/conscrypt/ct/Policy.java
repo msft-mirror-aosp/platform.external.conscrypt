@@ -18,34 +18,13 @@
 package com.android.org.conscrypt.ct;
 
 import java.security.cert.X509Certificate;
-import java.util.HashSet;
-import java.util.Set;
 import com.android.org.conscrypt.Internal;
 
 /**
  * @hide This class is not part of the Android public SDK API
  */
 @Internal
-public class CTPolicyImpl implements CTPolicy {
-    private final CTLogStore logStore;
-    private final int minimumLogCount;
-
-    public CTPolicyImpl(CTLogStore logStore, int minimumLogCount) {
-        this.logStore = logStore;
-        this.minimumLogCount = minimumLogCount;
-    }
-
-    @Override
-    public boolean doesResultConformToPolicy(CTVerificationResult result, String hostname,
-                                             X509Certificate[] chain) {
-        Set<CTLogInfo> logSet = new HashSet<>();
-        for (VerifiedSCT verifiedSCT: result.getValidSCTs()) {
-            CTLogInfo log = logStore.getKnownLog(verifiedSCT.sct.getLogID());
-            if (log != null) {
-                logSet.add(log);
-            }
-        }
-
-        return logSet.size() >= minimumLogCount;
-    }
+public interface Policy {
+    boolean isLogStoreCompliant(LogStore store);
+    PolicyCompliance doesResultConformToPolicy(VerificationResult result, X509Certificate leaf);
 }
