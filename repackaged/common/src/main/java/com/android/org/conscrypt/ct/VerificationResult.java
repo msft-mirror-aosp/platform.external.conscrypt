@@ -1,3 +1,4 @@
+/* GENERATED SOURCE. DO NOT MODIFY. */
 /*
  * Copyright (C) 2015 The Android Open Source Project
  *
@@ -14,20 +15,23 @@
  * limitations under the License.
  */
 
-package org.conscrypt.ct;
+package com.android.org.conscrypt.ct;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.conscrypt.Internal;
+import com.android.org.conscrypt.Internal;
 
+/**
+ * @hide This class is not part of the Android public SDK API
+ */
 @Internal
-public class CTVerificationResult {
+public class VerificationResult {
     private final ArrayList<VerifiedSCT> validSCTs = new ArrayList<VerifiedSCT>();
     private final ArrayList<VerifiedSCT> invalidSCTs = new ArrayList<VerifiedSCT>();
 
     public void add(VerifiedSCT result) {
-        if (result.status == VerifiedSCT.Status.VALID) {
+        if (result.isValid()) {
             validSCTs.add(result);
         } else {
             invalidSCTs.add(result);
@@ -42,4 +46,3 @@ public class CTVerificationResult {
         return Collections.unmodifiableList(invalidSCTs);
     }
 }
-
