@@ -54,9 +54,22 @@ public class VerifierTest {
                                     .setDescription("Test Log")
                                     .setUrl("http://example.com")
                                     .setOperator("LogOperator")
-                                    .setState(LogInfo.STATE_USABLE)
+                                    .setState(LogInfo.STATE_USABLE, 1643709600000L)
                                     .build();
         LogStore store = new LogStore() {
+            @Override
+            public void setPolicy(Policy policy) {}
+
+            @Override
+            public State getState() {
+                return LogStore.State.COMPLIANT;
+            }
+
+            @Override
+            public long getTimestamp() {
+                return 0;
+            }
+
             @Override
             public LogInfo getKnownLog(byte[] logId) {
                 if (Arrays.equals(logId, log.getID())) {
