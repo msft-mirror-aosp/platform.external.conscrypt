@@ -36,6 +36,11 @@ import static java.nio.file.attribute.PosixFilePermission.GROUP_EXECUTE;
 import static java.nio.file.attribute.PosixFilePermission.OTHERS_EXECUTE;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE;
 
+import org.conscrypt.ct.LogStore;
+import org.conscrypt.ct.Policy;
+import org.conscrypt.metrics.Source;
+import org.conscrypt.metrics.StatsLog;
+
 import java.io.File;
 import java.io.FileDescriptor;
 import java.io.IOException;
@@ -55,7 +60,6 @@ import java.security.AlgorithmParameters;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
 import java.security.PrivilegedAction;
 import java.security.Provider;
 import java.security.Security;
@@ -70,6 +74,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+
 import javax.crypto.spec.GCMParameterSpec;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
@@ -79,16 +84,14 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509ExtendedTrustManager;
 import javax.net.ssl.X509TrustManager;
-import org.conscrypt.ct.LogStore;
-import org.conscrypt.ct.Policy;
-import sun.security.x509.AlgorithmId;
 
 /**
  * Platform-specific methods for OpenJDK.
  *
  * Uses reflection to implement Java 8 SSL features for backwards compatibility.
  */
-final class Platform {
+@Internal
+final public class Platform {
     private static final int JAVA_VERSION = javaVersion0();
     private static final Method GET_CURVE_NAME_METHOD;
 
@@ -540,13 +543,26 @@ final class Platform {
     @SuppressWarnings("unused")
     static String oidToAlgorithmName(String oid) {
         try {
-            return AlgorithmId.get(oid).getName();
-        } catch (Exception e) {
-            return oid;
-        } catch (IllegalAccessError e) {
-            // This can happen under JPMS because AlgorithmId isn't exported by java.base
-            return oid;
+            Class<?> algorithmIdClass = Class.forName("sun.security.x509.AlgorithmId");
+            Method getMethod = algorithmIdClass.getDeclaredMethod("get", String.class);
+            getMethod.setAccessible(true);
+            Method getNameMethod = algorithmIdClass.getDeclaredMethod("getName");
+            getNameMethod.setAccessible(true);
+
+            Object algIdObj = getMethod.invoke(null, oid);
+            return (String) getNameMethod.invoke(algIdObj);
+        } catch (InvocationTargetException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof RuntimeException) {
+                throw(RuntimeException) cause;
+            } else if (cause instanceof Error) {
+                throw(Error) cause;
+            }
+            throw new RuntimeException(e);
+        } catch (Exception ignored) {
+            //Ignored
         }
+        return oid;
     }
 
     /*
@@ -791,9 +807,19 @@ final class Platform {
         return 0;
     }
 
+    public static StatsLog getStatsLog() {
+        return null;
+    }
+
     @SuppressWarnings("unused")
-    static void countTlsHandshake(
-            boolean success, String protocol, String cipherSuite, long duration) {}
+    public static Source getStatsSource() {
+        return null;
+    }
+
+    @SuppressWarnings("unused")
+    public static int[] getUids() {
+        return null;
+    }
 
     public static boolean isJavaxCertificateSupported() {
         return JAVA_VERSION < 15;

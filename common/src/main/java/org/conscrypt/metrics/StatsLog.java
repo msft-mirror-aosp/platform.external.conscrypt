@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.conscrypt.metrics;
 
-package org.apache.harmony.xnet.provider.jsse;
+import org.conscrypt.Internal;
+import org.conscrypt.ct.LogStore;
 
-class SSLParametersImpl {
-    public static SSLParametersImpl getDefault() {
-        throw new RuntimeException("Stub!");
-    }
+@Internal
+public interface StatsLog {
+    public void countTlsHandshake(
+            boolean success, String protocol, String cipherSuite, long duration);
+
+    public void updateCTLogListStatusChanged(LogStore logStore);
 }
