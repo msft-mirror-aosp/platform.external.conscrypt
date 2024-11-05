@@ -1,5 +1,6 @@
+/* GENERATED SOURCE. DO NOT MODIFY. */
 /*
- * Copyright 2016 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,18 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.android.org.conscrypt.metrics;
 
-package javax.net.ssl;
+import com.android.org.conscrypt.Internal;
+import com.android.org.conscrypt.ct.LogStore;
 
 /**
- * Stub class for compiling unbundled.
+ * @hide This class is not part of the Android public SDK API
  */
-public class SNIServerName {
-    protected SNIServerName() {
-        throw new UnsupportedOperationException("Stub!");
-    }
+@Internal
+public interface StatsLog {
+    public void countTlsHandshake(
+            boolean success, String protocol, String cipherSuite, long duration);
 
-    public final int getType() {
-        throw new UnsupportedOperationException("Stub!");
-    }
+    public void updateCTLogListStatusChanged(LogStore logStore);
 }

@@ -39,6 +39,8 @@ import static java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE;
 
 import com.android.org.conscrypt.ct.LogStore;
 import com.android.org.conscrypt.ct.Policy;
+import com.android.org.conscrypt.metrics.Source;
+import com.android.org.conscrypt.metrics.StatsLog;
 
 import java.io.File;
 import java.io.FileDescriptor;
@@ -59,7 +61,6 @@ import java.security.AlgorithmParameters;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
 import java.security.PrivilegedAction;
 import java.security.Provider;
 import java.security.Security;
@@ -85,14 +86,14 @@ import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509ExtendedTrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import sun.security.x509.AlgorithmId;
-
 /**
  * Platform-specific methods for OpenJDK.
  *
  * Uses reflection to implement Java 8 SSL features for backwards compatibility.
+ * @hide This class is not part of the Android public SDK API
  */
-final class Platform {
+@Internal
+final public class Platform {
     private static final int JAVA_VERSION = javaVersion0();
     private static final Method GET_CURVE_NAME_METHOD;
 
@@ -125,7 +126,7 @@ final class Platform {
         prefix = new File(prefix).getName();
         IOException suppressed = null;
         for (int i = 0; i < 10000; i++) {
-            String tempName = String.format(Locale.US, "%s%d%04d%s", prefix, time, i, suffix);
+            String tempName = String.format(Locale.ROOT, "%s%d%04d%s", prefix, time, i, suffix);
             File tempFile = new File(directory, tempName);
             if (!tempName.equals(tempFile.getName())) {
                 // The given prefix or suffix contains path separators.
@@ -544,13 +545,26 @@ final class Platform {
     @SuppressWarnings("unused")
     static String oidToAlgorithmName(String oid) {
         try {
-            return AlgorithmId.get(oid).getName();
-        } catch (Exception e) {
-            return oid;
-        } catch (IllegalAccessError e) {
-            // This can happen under JPMS because AlgorithmId isn't exported by java.base
-            return oid;
+            Class<?> algorithmIdClass = Class.forName("sun.security.x509.AlgorithmId");
+            Method getMethod = algorithmIdClass.getDeclaredMethod("get", String.class);
+            getMethod.setAccessible(true);
+            Method getNameMethod = algorithmIdClass.getDeclaredMethod("getName");
+            getNameMethod.setAccessible(true);
+
+            Object algIdObj = getMethod.invoke(null, oid);
+            return (String) getNameMethod.invoke(algIdObj);
+        } catch (InvocationTargetException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof RuntimeException) {
+                throw (RuntimeException) cause;
+            } else if (cause instanceof Error) {
+                throw (Error) cause;
+            }
+            throw new RuntimeException(e);
+        } catch (Exception ignored) {
+            // Ignored
         }
+        return oid;
     }
 
     /*
@@ -581,8 +595,22 @@ final class Platform {
             return originalHostName;
         } catch (InvocationTargetException e) {
             throw new RuntimeException("Failed to get originalHostName", e);
-        } catch (ClassNotFoundException | IllegalAccessException | NoSuchMethodException ignore) {
+        } catch (ClassNotFoundException | IllegalAccessException | NoSuchMethodException ignored) {
             // passthrough and return addr.getHostAddress()
+        } catch (Exception maybeIgnored) {
+            if (!maybeIgnored.getClass().getSimpleName().equals("InaccessibleObjectException")) {
+                throw new RuntimeException("Failed to get originalHostName", maybeIgnored);
+            }
+            // Java versions which prevent reflection to get the original hostname.
+            // Ugly workaround is parse it from toString(), which uses holder.hostname rather
+            // than holder.originalHostName.  But in Java versions up to 21 at least and in the way
+            // used by Conscrypt, hostname always equals originalHostname.
+            String representation = addr.toString();
+            int slash = representation.indexOf('/');
+            if (slash != -1) {
+                return representation.substring(0, slash);
+            }
+            // Give up and return the IP
         }
 
         return addr.getHostAddress();
@@ -620,7 +648,7 @@ final class Platform {
         }
 
         String property = Security.getProperty("conscrypt.ct.enable");
-        if (property == null || !Boolean.valueOf(property.toLowerCase())) {
+        if (property == null || !Boolean.parseBoolean(property.toLowerCase(Locale.ROOT))) {
             return false;
         }
 
@@ -634,15 +662,14 @@ final class Platform {
         for (String part : parts) {
             property = Security.getProperty(propertyName + ".*");
             if (property != null) {
-                enable = Boolean.valueOf(property.toLowerCase());
+                enable = Boolean.parseBoolean(property.toLowerCase(Locale.ROOT));
             }
-
             propertyName.append(".").append(part);
         }
 
         property = Security.getProperty(propertyName.toString());
         if (property != null) {
-            enable = Boolean.valueOf(property.toLowerCase());
+            enable = Boolean.parseBoolean(property.toLowerCase(Locale.ROOT));
         }
         return enable;
     }
@@ -795,9 +822,19 @@ final class Platform {
         return 0;
     }
 
+    public static StatsLog getStatsLog() {
+        return null;
+    }
+
     @SuppressWarnings("unused")
-    static void countTlsHandshake(
-            boolean success, String protocol, String cipherSuite, long duration) {}
+    public static Source getStatsSource() {
+        return null;
+    }
+
+    @SuppressWarnings("unused")
+    public static int[] getUids() {
+        return null;
+    }
 
     public static boolean isJavaxCertificateSupported() {
         return JAVA_VERSION < 15;
