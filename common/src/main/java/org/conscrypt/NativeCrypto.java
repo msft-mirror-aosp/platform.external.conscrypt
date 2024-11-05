@@ -133,19 +133,19 @@ public final class NativeCrypto {
     static native int RSA_private_decrypt(int flen, byte[] from, byte[] to, NativeRef.EVP_PKEY pkey,
             int padding) throws BadPaddingException, SignatureException;
 
-    /**
-     * @return array of {n, e}
+    /*
+     * Returns array of {n, e}
      */
     static native byte[][] get_RSA_public_params(NativeRef.EVP_PKEY rsa);
 
-    /**
-     * @return array of {n, e, d, p, q, dmp1, dmq1, iqmp}
+    /*
+     * Returns array of {n, e, d, p, q, dmp1, dmq1, iqmp}
      */
     static native byte[][] get_RSA_private_params(NativeRef.EVP_PKEY rsa);
 
     // --- ChaCha20 -----------------------
 
-    /**
+    /*
      * Returns the encrypted or decrypted version of the data.
      */
     static native void chacha20_encrypt_decrypt(byte[] in, int inOffset, byte[] out, int outOffset,
@@ -539,6 +539,7 @@ public final class NativeCrypto {
 
     static native byte[] get_X509_tbs_cert(long x509ctx, OpenSSLX509Certificate holder);
 
+
     static native byte[] get_X509_tbs_cert_without_ext(long x509ctx, OpenSSLX509Certificate holder, String oid);
 
     static native byte[] get_X509_signature(long x509ctx, OpenSSLX509Certificate holder);
@@ -862,10 +863,8 @@ public final class NativeCrypto {
         if (loadError == null) {
             // If loadError is not null, it means the native code was not loaded, so
             // get_cipher_names will throw UnsatisfiedLinkError. Populate the list of supported
-            // ciphers with BoringSSL's default, and also explicitly include 3DES.
-            // https://boringssl-review.googlesource.com/c/boringssl/+/59425 will remove 3DES
-            // from BoringSSL's default, but Conscrypt isn't quite ready to remove it yet.
-            String[] allCipherSuites = get_cipher_names("ALL:3DES");
+            // ciphers with BoringSSL's default.
+            String[] allCipherSuites = get_cipher_names("ALL");
 
             // get_cipher_names returns an array where even indices are the standard name and odd
             // indices are the OpenSSL name.

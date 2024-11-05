@@ -128,6 +128,8 @@ public final class StandardNames {
         }
         paddings.addAll(Arrays.asList(newPaddings));
     }
+
+    @SuppressWarnings("EnumOrdinal")
     private static void provideSslContextEnabledProtocols(
             String algorithm, TLSVersion minimum, TLSVersion maximum) {
         if (minimum.ordinal() > maximum.ordinal()) {
@@ -140,6 +142,7 @@ public final class StandardNames {
         }
         SSL_CONTEXT_PROTOCOLS_ENABLED.put(algorithm, versionNames);
     }
+
     static {
         // TODO: provideCipherModes and provideCipherPaddings for other Ciphers
         provideCipherModes("AES", new String[] {"CBC", "CFB", "CTR", "CTS", "ECB", "OFB"});
@@ -256,7 +259,6 @@ public final class StandardNames {
         addOpenSsl("TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA");
         addOpenSsl("TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA");
         addOpenSsl("TLS_RSA_WITH_AES_128_CBC_SHA");
-        addOpenSsl("SSL_RSA_WITH_3DES_EDE_CBC_SHA");
 
         // TLSv1.2 cipher suites
         addOpenSsl("TLS_RSA_WITH_AES_128_GCM_SHA256");
