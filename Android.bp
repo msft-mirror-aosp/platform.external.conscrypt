@@ -211,7 +211,9 @@ java_aconfig_library {
     ],
     min_sdk_version: "30",
     installable: false,
-    visibility: ["//visibility:private"],
+    visibility: [
+        "//cts/tests/tests/networksecurityconfig:__subpackages__",
+    ],
 }
 
 cc_binary_host {
@@ -404,6 +406,9 @@ java_sdk_library {
     dist_stem: "conscrypt-coreplatform",
     // TODO: remove this when Conscrypt's @CorePlatformApi has been migrated to @SystemApi
     unsafe_ignore_missing_latest_api: true,
+    libs: [
+        "conscrypt-aconfig-flags-lib",
+    ],
 }
 
 // A library containing the public API stubs of the Conscrypt module.
