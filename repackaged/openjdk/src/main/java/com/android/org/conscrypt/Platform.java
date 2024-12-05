@@ -38,8 +38,7 @@ import static java.nio.file.attribute.PosixFilePermission.OTHERS_EXECUTE;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE;
 
 import com.android.org.conscrypt.NativeCrypto;
-import com.android.org.conscrypt.ct.LogStore;
-import com.android.org.conscrypt.ct.Policy;
+import com.android.org.conscrypt.ct.CertificateTransparency;
 import com.android.org.conscrypt.metrics.Source;
 import com.android.org.conscrypt.metrics.StatsLog;
 
@@ -651,7 +650,7 @@ final public class Platform {
      * - conscrypt.ct.enforce.com.*
      * - conscrypt.ct.enforce.*
      */
-    static boolean isCTVerificationRequired(String hostname) {
+    public static boolean isCTVerificationRequired(String hostname) {
         if (hostname == null) {
             return false;
         }
@@ -747,11 +746,7 @@ final public class Platform {
         return null;
     }
 
-    static LogStore newDefaultLogStore() {
-        return null;
-    }
-
-    static Policy newDefaultPolicy() {
+    static CertificateTransparency newDefaultCertificateTransparency() {
         return null;
     }
 
