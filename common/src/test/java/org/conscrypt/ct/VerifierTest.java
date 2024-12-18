@@ -58,9 +58,6 @@ public class VerifierTest {
                                     .build();
         LogStore store = new LogStore() {
             @Override
-            public void setPolicy(Policy policy) {}
-
-            @Override
             public State getState() {
                 return LogStore.State.COMPLIANT;
             }
@@ -68,6 +65,26 @@ public class VerifierTest {
             @Override
             public long getTimestamp() {
                 return 0;
+            }
+
+            @Override
+            public int getMajorVersion() {
+                return 1;
+            }
+
+            @Override
+            public int getMinorVersion() {
+                return 2;
+            }
+
+            @Override
+            public int getCompatVersion() {
+                return 1;
+            }
+
+            @Override
+            public int getMinCompatVersionAvailable() {
+                return 1;
             }
 
             @Override
