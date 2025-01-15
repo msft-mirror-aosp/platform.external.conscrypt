@@ -45,6 +45,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -54,17 +55,17 @@ import java.util.logging.Logger;
 @Internal
 public class LogStoreImpl implements LogStore {
     private static final Logger logger = Logger.getLogger(LogStoreImpl.class.getName());
-    private static final String BASE_PATH = "misc/keychain/ct";
     private static final int COMPAT_VERSION = 1;
-    private static final String CURRENT = "current";
-    private static final String LOG_LIST_FILENAME = "log_list.json";
     private static final Path DEFAULT_LOG_LIST;
+    private static final long LOG_LIST_CHECK_INTERVAL_IN_NS =
+            10L * 60 * 1_000 * 1_000_000; // 10 minutes
 
     static {
         String androidData = System.getenv("ANDROID_DATA");
         String compatVersion = String.format("v%d", COMPAT_VERSION);
-        DEFAULT_LOG_LIST =
-                Paths.get(androidData, BASE_PATH, compatVersion, CURRENT, LOG_LIST_FILENAME);
+        // /data/misc/keychain/ct/v1/current/log_list.json
+        DEFAULT_LOG_LIST = Paths.get(
+                androidData, "misc", "keychain", "ct", compatVersion, "current", "log_list.json");
     }
 
     private final Path logList;
@@ -75,6 +76,17 @@ public class LogStoreImpl implements LogStore {
     private int minorVersion;
     private long timestamp;
     private Map<ByteArray, LogInfo> logs;
+    private long logListLastModified;
+    private Supplier<Long> clock;
+    private long logListLastChecked;
+
+    /* We do not have access to InstantSource. Implement a similar pattern using Supplier. */
+    static class SystemTimeSupplier implements Supplier<Long> {
+        @Override
+        public Long get() {
+            return System.nanoTime();
+        }
+    }
 
     public LogStoreImpl(Policy policy) {
         this(policy, DEFAULT_LOG_LIST);
@@ -85,10 +97,15 @@ public class LogStoreImpl implements LogStore {
     }
 
     public LogStoreImpl(Policy policy, Path logList, StatsLog metrics) {
+        this(policy, logList, metrics, new SystemTimeSupplier());
+    }
+
+    public LogStoreImpl(Policy policy, Path logList, StatsLog metrics, Supplier<Long> clock) {
         this.state = State.UNINITIALIZED;
         this.policy = policy;
         this.logList = logList;
         this.metrics = metrics;
+        this.clock = clock;
     }
 
     @Override
@@ -147,26 +164,54 @@ public class LogStoreImpl implements LogStore {
     /* Ensures the log list is loaded.
      * Returns true if the log list is usable.
      */
-    private boolean ensureLogListIsLoaded() {
-        synchronized (this) {
-            State previousState = state;
-            if (state == State.UNINITIALIZED) {
-                state = loadLogList();
-            }
-            if (state == State.LOADED && policy != null) {
-                state = policy.isLogStoreCompliant(this) ? State.COMPLIANT : State.NON_COMPLIANT;
-            }
-            if (state != previousState) {
-                metrics.updateCTLogListStatusChanged(this);
-            }
-            return state == State.COMPLIANT;
+    private synchronized boolean ensureLogListIsLoaded() {
+        resetLogListIfRequired();
+        State previousState = state;
+        if (state == State.UNINITIALIZED) {
+            state = loadLogList();
         }
+        if (state == State.LOADED && policy != null) {
+            state = policy.isLogStoreCompliant(this) ? State.COMPLIANT : State.NON_COMPLIANT;
+        }
+        if (state != previousState) {
+            metrics.updateCTLogListStatusChanged(this);
+        }
+        return state == State.COMPLIANT;
+    }
+
+    private synchronized void resetLogListIfRequired() {
+        long now = clock.get();
+        if (this.logListLastChecked + LOG_LIST_CHECK_INTERVAL_IN_NS > now) {
+            return;
+        }
+        this.logListLastChecked = now;
+        try {
+            long lastModified = Files.getLastModifiedTime(logList).toMillis();
+            if (this.logListLastModified == lastModified) {
+                // The log list has the same last modified timestamp. Keep our
+                // current cached value.
+                return;
+            }
+        } catch (IOException e) {
+            if (this.logListLastModified == 0) {
+                // The log list is not accessible now and it has never been
+                // previously, there is nothing to do.
+                return;
+            }
+        }
+        this.state = State.UNINITIALIZED;
+        this.logs = null;
+        this.timestamp = 0;
+        this.majorVersion = 0;
+        this.minorVersion = 0;
     }
 
     private State loadLogList() {
         byte[] content;
+        long lastModified;
         try {
             content = Files.readAllBytes(logList);
+            lastModified = Files.getLastModifiedTime(logList).toMillis();
         } catch (IOException e) {
             return State.NOT_FOUND;
         }
@@ -223,6 +268,7 @@ public class LogStoreImpl implements LogStore {
             return State.MALFORMED;
         }
         this.logs = Collections.unmodifiableMap(logsMap);
+        this.logListLastModified = lastModified;
         return State.LOADED;
     }
 
