@@ -26,6 +26,10 @@ import android.system.StructTimeval;
 
 import com.android.org.conscrypt.NativeCrypto;
 import com.android.org.conscrypt.ct.CertificateTransparency;
+import com.android.org.conscrypt.ct.LogStore;
+import com.android.org.conscrypt.ct.LogStoreImpl;
+import com.android.org.conscrypt.ct.Policy;
+import com.android.org.conscrypt.ct.PolicyImpl;
 import com.android.org.conscrypt.flags.Flags;
 import com.android.org.conscrypt.metrics.CertificateTransparencyVerificationReason;
 import com.android.org.conscrypt.metrics.OptionalMethod;

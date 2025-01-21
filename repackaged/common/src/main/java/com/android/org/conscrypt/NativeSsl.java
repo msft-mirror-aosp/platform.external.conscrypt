@@ -354,7 +354,7 @@ final class NativeSsl {
         // not registered at the moment.
         if (!parameters.isSpake()) {
             NativeCrypto.setEnabledCipherSuites(
-                ssl, this, parameters.enabledCipherSuites, parameters.enabledProtocols);
+                    ssl, this, parameters.enabledCipherSuites, parameters.enabledProtocols);
         }
 
         if (parameters.applicationProtocols.length > 0) {
@@ -396,7 +396,7 @@ final class NativeSsl {
         NativeCrypto.SSL_set_mode(ssl, this, SSL_MODE_CBC_RECORD_SPLITTING);
 
         if (!parameters.isSpake()) {
-          setCertificateValidation();
+            setCertificateValidation();
         }
         setTlsChannelId(channelIdPrivateKey);
     }
