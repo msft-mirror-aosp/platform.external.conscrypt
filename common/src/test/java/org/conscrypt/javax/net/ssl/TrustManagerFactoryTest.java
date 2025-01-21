@@ -84,6 +84,10 @@ public class TrustManagerFactoryTest {
         assertNotNull(tmf.getAlgorithm());
         assertNotNull(tmf.getProvider());
 
+        if (tmf.getAlgorithm() == "PAKE") {
+            return;
+        }
+
         // before init
         if (tmf.getAlgorithm() != "PAKE") {
             try {

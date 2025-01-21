@@ -248,7 +248,7 @@ public class DuckTypedHpkeSpiTest {
         // Verify the SPI is indeed foreign.
         assertTrue(duckTyped.getDelegate() instanceof HpkeForeignSpi);
 
-        // And that it is delegating to a real HpkeImpl, so we can test it.
+        // And that it is delegating to a real implementation, so we can test it.
         assertNotNull(duckTyped.getDelegate());
     }
 

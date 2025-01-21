@@ -17,12 +17,14 @@
 
 package com.android.org.conscrypt;
 
-import java.util.List;
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.KeyManager;
 import java.security.Principal;
+import java.util.List;
+
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.SSLEngine;
 
 /**
+ * @hide This class is not part of the Android public SDK API
  * @hide This class is not part of the Android public SDK API
  */
 @Internal
@@ -48,23 +50,21 @@ public class Spake2PlusKeyManager implements KeyManager {
         this.isClient = isClient;
     }
 
-  public String chooseEngineAlias(String keyType,
-          Principal[] issuers, SSLEngine engine) {
-    throw new UnsupportedOperationException("Not implemented");
-  }
+    public String chooseEngineAlias(String keyType, Principal[] issuers, SSLEngine engine) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
 
-  public String chooseEngineClientAlias(String[] keyType,
-          Principal[] issuers, SSLEngine engine) {
-    throw new UnsupportedOperationException("Not implemented");
-  }
+    public String chooseEngineClientAlias(String[] keyType, Principal[] issuers, SSLEngine engine) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
 
-  public byte[] getContext() {
-      return context;
-  }
+    public byte[] getContext() {
+        return context;
+    }
 
-  public byte[] getPassword() {
-    return password;
-  }
+    public byte[] getPassword() {
+        return password;
+    }
 
   public byte[] getW0() {
       return w0;
@@ -79,11 +79,11 @@ public class Spake2PlusKeyManager implements KeyManager {
   }
 
   public byte[] getIdProver() {
-    return idProver;
+      return idProver;
   }
 
   public byte[] getIdVerifier() {
-    return idVerifier;
+      return idVerifier;
   }
 
   public boolean isClient() {
