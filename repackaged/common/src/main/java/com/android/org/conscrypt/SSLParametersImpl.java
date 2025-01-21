@@ -185,8 +185,8 @@ final class SSLParametersImpl implements Cloneable {
         }
         boolean x509CipherSuitesNeeded = (x509KeyManager != null) || (x509TrustManager != null);
         boolean pskCipherSuitesNeeded = pskKeyManager != null;
-        enabledCipherSuites = getDefaultCipherSuites(
-                x509CipherSuitesNeeded, pskCipherSuitesNeeded, isSpake());
+        enabledCipherSuites =
+                getDefaultCipherSuites(x509CipherSuitesNeeded, pskCipherSuitesNeeded, isSpake());
 
         // We ignore the SecureRandom passed in by the caller. The native code below
         // directly accesses /dev/urandom, which makes it irrelevant.
@@ -194,15 +194,11 @@ final class SSLParametersImpl implements Cloneable {
 
     // Copy constructor for the purposes of changing the final fields
     @SuppressWarnings("deprecation") // for PSKKeyManager
-    private SSLParametersImpl(
-            ClientSessionContext clientSessionContext,
-            ServerSessionContext serverSessionContext,
-            X509KeyManager x509KeyManager,
-            PSKKeyManager pskKeyManager,
-            X509TrustManager x509TrustManager,
+    private SSLParametersImpl(ClientSessionContext clientSessionContext,
+            ServerSessionContext serverSessionContext, X509KeyManager x509KeyManager,
+            PSKKeyManager pskKeyManager, X509TrustManager x509TrustManager,
             Spake2PlusTrustManager spake2PlusTrustManager,
-            Spake2PlusKeyManager spake2PlusKeyManager,
-            SSLParametersImpl sslParams) {
+            Spake2PlusKeyManager spake2PlusKeyManager, SSLParametersImpl sslParams) {
         this.clientSessionContext = clientSessionContext;
         this.serverSessionContext = serverSessionContext;
         this.x509KeyManager = x509KeyManager;
@@ -575,13 +571,13 @@ final class SSLParametersImpl implements Cloneable {
     }
 
     SSLParametersImpl cloneWithTrustManager(X509TrustManager newTrustManager) {
-        return new SSLParametersImpl(clientSessionContext, serverSessionContext,
-            x509KeyManager, pskKeyManager, newTrustManager, null, null, this);
+        return new SSLParametersImpl(clientSessionContext, serverSessionContext, x509KeyManager,
+                pskKeyManager, newTrustManager, null, null, this);
     }
 
     SSLParametersImpl cloneWithSpake() {
-        return new SSLParametersImpl(clientSessionContext, serverSessionContext,
-            null, null, null, spake2PlusTrustManager, spake2PlusKeyManager, this);
+        return new SSLParametersImpl(clientSessionContext, serverSessionContext, null, null, null,
+                spake2PlusTrustManager, spake2PlusKeyManager, this);
     }
 
     private static X509KeyManager getDefaultX509KeyManager() throws KeyManagementException {
@@ -749,10 +745,8 @@ final class SSLParametersImpl implements Cloneable {
         this.useCipherSuitesOrder = useCipherSuitesOrder;
     }
 
-    private static String[] getDefaultCipherSuites(
-            boolean x509CipherSuitesNeeded,
-            boolean pskCipherSuitesNeeded,
-            boolean spake2PlusCipherSuitesNeeded) {
+    private static String[] getDefaultCipherSuites(boolean x509CipherSuitesNeeded,
+            boolean pskCipherSuitesNeeded, boolean spake2PlusCipherSuitesNeeded) {
         if (spake2PlusCipherSuitesNeeded) {
             return NativeCrypto.DEFAULT_SPAKE_CIPHER_SUITES;
         }

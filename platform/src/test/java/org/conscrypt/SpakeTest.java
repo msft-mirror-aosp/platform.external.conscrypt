@@ -21,15 +21,16 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import org.junit.runner.RunWith;
-import org.junit.rules.TestRule;
+import android.net.ssl.PakeClientKeyManagerParameters;
+import android.net.ssl.PakeOption;
+import android.net.ssl.PakeServerKeyManagerParameters;
+
+import org.conscrypt.Spake2PlusKeyManager;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-
-import android.net.ssl.PakeClientKeyManagerParameters;
-import android.net.ssl.PakeServerKeyManagerParameters;
-import android.net.ssl.PakeOption;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -40,6 +41,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+
 import javax.net.SocketFactory;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -53,16 +55,13 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 
-import org.conscrypt.Spake2PlusKeyManager;
-
-
 @RunWith(JUnit4.class)
 public class SpakeTest {
     private static final byte[] CLIENT_ID = new byte[] {4, 5, 6};
     private static final byte[] SERVER_ID = new byte[] {7, 8, 9};
     private final ThreadGroup threadGroup = new ThreadGroup("SpakeTest");
     private final ExecutorService executor =
-        Executors.newCachedThreadPool(t -> new Thread(threadGroup, t));
+            Executors.newCachedThreadPool(t -> new Thread(threadGroup, t));
 
     @Test
     public void testSpake2Plus() throws Exception {
@@ -78,28 +77,29 @@ public class SpakeTest {
         TrustManagerFactory tmf = TrustManagerFactory.getInstance("PAKE");
         tmf.init((ManagerFactoryParameters) null);
 
-        PakeClientKeyManagerParameters kmfParamsClient = new PakeClientKeyManagerParameters
-            .Builder()
-            .setClientId(CLIENT_ID.clone())
-            .setServerId(SERVER_ID.clone())
-            .addOption(option)
-            .build();
+        PakeClientKeyManagerParameters kmfParamsClient =
+                new PakeClientKeyManagerParameters.Builder()
+                        .setClientId(CLIENT_ID.clone())
+                        .setServerId(SERVER_ID.clone())
+                        .addOption(option)
+                        .build();
 
         KeyManagerFactory kmfClient = KeyManagerFactory.getInstance("PAKE");
         kmfClient.init(kmfParamsClient);
         KeyManager[] keyManagersClient = kmfClient.getKeyManagers();
         assertTrue(keyManagersClient.length == 1);
         assertTrue(keyManagersClient[0] instanceof Spake2PlusKeyManager);
-        Spake2PlusKeyManager spake2PlusKeyManagerClient = (Spake2PlusKeyManager) keyManagersClient[0];
+        Spake2PlusKeyManager spake2PlusKeyManagerClient =
+                (Spake2PlusKeyManager) keyManagersClient[0];
         assertTrue(spake2PlusKeyManagerClient.isClient());
 
         SSLContext contextClient = SSLContext.getInstance("TlsV1.3");
         contextClient.init(keyManagersClient, tmf.getTrustManagers(), null);
 
-        PakeServerKeyManagerParameters kmfParamsServer = new PakeServerKeyManagerParameters
-            .Builder()
-            .setOptions(CLIENT_ID.clone(), SERVER_ID.clone(), Arrays.asList(option))
-            .build();
+        PakeServerKeyManagerParameters kmfParamsServer =
+                new PakeServerKeyManagerParameters.Builder()
+                        .setOptions(CLIENT_ID.clone(), SERVER_ID.clone(), Arrays.asList(option))
+                        .build();
 
         KeyManagerFactory kmfServer = KeyManagerFactory.getInstance("PAKE");
         kmfServer.init(kmfParamsServer);
@@ -115,11 +115,8 @@ public class SpakeTest {
         SSLServerSocket serverSocket =
                 (SSLServerSocket) contextServer.getServerSocketFactory().createServerSocket();
         serverSocket.bind(new InetSocketAddress(hostS, 0));
-        SSLSocket client =
-                (SSLSocket)
-                        contextClient
-                                .getSocketFactory()
-                                .createSocket(hostC, serverSocket.getLocalPort());
+        SSLSocket client = (SSLSocket) contextClient.getSocketFactory().createSocket(
+                hostC, serverSocket.getLocalPort());
         SSLSocket server = (SSLSocket) serverSocket.accept();
 
         assertTrue(client.getUseClientMode());
@@ -146,12 +143,11 @@ public class SpakeTest {
                                     .addMessageComponent("password", password)
                                     .build();
 
-        PakeClientKeyManagerParameters pakeParams = new PakeClientKeyManagerParameters
-            .Builder()
-            .setClientId(CLIENT_ID.clone())
-            .setServerId(SERVER_ID.clone())
-            .addOption(option)
-            .build();
+        PakeClientKeyManagerParameters pakeParams = new PakeClientKeyManagerParameters.Builder()
+                                                            .setClientId(CLIENT_ID.clone())
+                                                            .setServerId(SERVER_ID.clone())
+                                                            .addOption(option)
+                                                            .build();
 
         KeyManagerFactory kmf = KeyManagerFactory.getInstance("PAKE");
         kmf.init(pakeParams);
@@ -173,15 +169,9 @@ public class SpakeTest {
 
         SSLContext sslContext = SSLContext.getInstance("TlsV1.3");
         // Should throw due to both SPAKE and x509 key managers
-        assertThrows(
-                KeyManagementException.class,
-                () ->
-                        sslContext.init(
-                                keyManagersWithx509,
-                                trustManagers,
-                                null));
+        assertThrows(KeyManagementException.class,
+                () -> sslContext.init(keyManagersWithx509, trustManagers, null));
     }
-
 
     @Test
     public void testSpake2PlusNoTrustOrKeyInvalid() throws Exception {
@@ -191,12 +181,11 @@ public class SpakeTest {
                                     .addMessageComponent("password", password)
                                     .build();
 
-        PakeClientKeyManagerParameters pakeParams = new PakeClientKeyManagerParameters
-            .Builder()
-            .setClientId(CLIENT_ID.clone())
-            .setServerId(SERVER_ID.clone())
-            .addOption(option)
-            .build();
+        PakeClientKeyManagerParameters pakeParams = new PakeClientKeyManagerParameters.Builder()
+                                                            .setClientId(CLIENT_ID.clone())
+                                                            .setServerId(SERVER_ID.clone())
+                                                            .addOption(option)
+                                                            .build();
 
         KeyManagerFactory kmf = KeyManagerFactory.getInstance("PAKE");
         kmf.init(pakeParams);
@@ -208,21 +197,10 @@ public class SpakeTest {
         TrustManager[] trustManagers = tmf.getTrustManagers();
 
         SSLContext sslContext = SSLContext.getInstance("TlsV1.3");
-        assertThrows(
-                KeyManagementException.class,
-                () ->
-                        sslContext.init(
-                                keyManagers,
-                                null,
-                                null));
+        assertThrows(KeyManagementException.class, () -> sslContext.init(keyManagers, null, null));
 
         assertThrows(
-                KeyManagementException.class,
-                () ->
-                        sslContext.init(
-                                null,
-                                trustManagers,
-                                null));
+                KeyManagementException.class, () -> sslContext.init(null, trustManagers, null));
     }
 
     private <T> Future<T> runAsync(Callable<T> callable) {
