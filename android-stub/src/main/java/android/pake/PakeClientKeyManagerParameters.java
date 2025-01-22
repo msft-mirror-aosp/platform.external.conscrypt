@@ -18,9 +18,6 @@ package android.net.ssl;
 
 import static java.util.Objects.requireNonNull;
 
-import android.annotation.FlaggedApi;
-import android.annotation.SystemApi;
-
 import libcore.util.NonNull;
 import libcore.util.Nullable;
 
@@ -44,46 +41,14 @@ import javax.net.ssl.ManagerFactoryParameters;
  *
  * @hide
  */
-@SystemApi
-@FlaggedApi(com.android.org.conscrypt.flags.Flags.FLAG_SPAKE2PLUS_API)
 public final class PakeClientKeyManagerParameters implements ManagerFactoryParameters {
-    /**
-     * The ID of the client involved in the PAKE exchange.
-     */
-    private final byte[] clientId;
-
-    /**
-     * The ID of the server involved in the PAKE exchange.
-     */
-    private final byte[] serverId;
-
-    /**
-     * A list of available PAKE options. At least one option needs to be
-     * provided.
-     */
-    private final List<PakeOption> options;
-
-    /**
-     * Private constructor to enforce immutability.
-     *
-     * @param clientId The ID of the client involved in the PAKE exchange.
-     * @param serverId The ID of the server involved in the PAKE exchange.
-     * @param options  A list of available PAKE options.
-     */
-    private PakeClientKeyManagerParameters(
-            byte[] clientId, byte[] serverId, List<PakeOption> options) {
-        this.clientId = clientId;
-        this.serverId = serverId;
-        this.options = Collections.unmodifiableList(new ArrayList<>(options));
-    }
-
     /**
      * Returns the client identifier.
      *
      * @return The client identifier.
      */
     public @Nullable byte[] getClientId() {
-        return clientId;
+        throw new RuntimeException("Stub!");
     }
 
     /**
@@ -92,7 +57,7 @@ public final class PakeClientKeyManagerParameters implements ManagerFactoryParam
      * @return The server identifier.
      */
     public @Nullable byte[] getServerId() {
-        return serverId;
+        throw new RuntimeException("Stub!");
     }
 
     /**
@@ -101,7 +66,7 @@ public final class PakeClientKeyManagerParameters implements ManagerFactoryParam
      * @return A copy of the list of available PAKE options.
      */
     public @NonNull List<PakeOption> getOptions() {
-        return new ArrayList<>(options);
+        throw new RuntimeException("Stub!");
     }
 
     /**
@@ -109,13 +74,7 @@ public final class PakeClientKeyManagerParameters implements ManagerFactoryParam
      *
      * @hide
      */
-    @SystemApi
-    @FlaggedApi(com.android.org.conscrypt.flags.Flags.FLAG_SPAKE2PLUS_API)
     public static final class Builder {
-        private byte[] clientId;
-        private byte[] serverId;
-        private List<PakeOption> options = new ArrayList<>();
-
         /**
          * Sets the ID of the client involved in the PAKE exchange.
          *
@@ -123,8 +82,7 @@ public final class PakeClientKeyManagerParameters implements ManagerFactoryParam
          * @return This builder.
          */
         public @NonNull Builder setClientId(@Nullable byte[] clientId) {
-            this.clientId = clientId;
-            return this;
+            throw new RuntimeException("Stub!");
         }
 
         /**
@@ -134,8 +92,7 @@ public final class PakeClientKeyManagerParameters implements ManagerFactoryParam
          * @return This builder.
          */
         public @NonNull Builder setServerId(@Nullable byte[] serverId) {
-            this.serverId = serverId;
-            return this;
+            throw new RuntimeException("Stub!");
         }
 
         /**
@@ -146,26 +103,7 @@ public final class PakeClientKeyManagerParameters implements ManagerFactoryParam
          * @throws InvalidParameterException If an option with the same algorithm already exists.
          */
         public @NonNull Builder addOption(@NonNull PakeOption option) {
-            requireNonNull(option, "Option cannot be null.");
-
-            // For SPAKE2PLUS_PRERELEASE, clients, if using "w0" and "w1" for proving, must have
-            // both of them together. PakeOption already validates other parts, like the usage of
-            // "password", or that not all of "w0", "w1" and "L" are present.
-            if (option.getAlgorithm().equals("SPAKE2PLUS_PRERELEASE")
-                    && option.getMessageComponent("w0") != null
-                    && option.getMessageComponent("w1") == null) {
-                throw new InvalidParameterException(
-                        "SPAKE2PLUS_PRERELEASE client needs w1 when w0 is present");
-            }
-
-            for (PakeOption existingOption : options) {
-                if (existingOption.getAlgorithm().equals(option.getAlgorithm())) {
-                    throw new InvalidParameterException(
-                            "An option with the same algorithm already exists.");
-                }
-            }
-            this.options.add(option);
-            return this;
+            throw new RuntimeException("Stub!");
         }
 
         /**
@@ -175,10 +113,7 @@ public final class PakeClientKeyManagerParameters implements ManagerFactoryParam
          * @throws InvalidParameterException If no PAKE options are provided.
          */
         public @NonNull PakeClientKeyManagerParameters build() {
-            if (options.isEmpty()) {
-                throw new InvalidParameterException("At least one PAKE option must be provided.");
-            }
-            return new PakeClientKeyManagerParameters(clientId, serverId, options);
+            throw new RuntimeException("Stub!");
         }
     }
 }
