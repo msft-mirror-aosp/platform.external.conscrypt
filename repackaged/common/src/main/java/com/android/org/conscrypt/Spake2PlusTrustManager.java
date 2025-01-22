@@ -21,13 +21,13 @@ import javax.net.ssl.TrustManager;
 
 /**
  * @hide This class is not part of the Android public SDK API
+ * @hide This class is not part of the Android public SDK API
  */
 @Internal
 public class Spake2PlusTrustManager implements TrustManager {
+    Spake2PlusTrustManager() {}
 
-  Spake2PlusTrustManager() {}
+    public void checkClientTrusted() {}
 
-  public void checkClientTrusted() {}
-
-  public void checkServerTrusted() {}
+    public void checkServerTrusted() {}
 }

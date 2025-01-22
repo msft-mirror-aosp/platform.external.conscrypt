@@ -25,6 +25,10 @@ import static org.conscrypt.NativeConstants.SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
 import static org.conscrypt.NativeConstants.SSL_VERIFY_NONE;
 import static org.conscrypt.NativeConstants.SSL_VERIFY_PEER;
 
+import org.conscrypt.NativeCrypto.SSLHandshakeCallbacks;
+import org.conscrypt.SSLParametersImpl.AliasChooser;
+import org.conscrypt.SSLParametersImpl.PSKCallbacks;
+
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.net.SocketException;
@@ -40,15 +44,13 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 import javax.crypto.SecretKey;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.X509KeyManager;
 import javax.net.ssl.X509TrustManager;
 import javax.security.auth.x500.X500Principal;
-import org.conscrypt.NativeCrypto.SSLHandshakeCallbacks;
-import org.conscrypt.SSLParametersImpl.AliasChooser;
-import org.conscrypt.SSLParametersImpl.PSKCallbacks;
 
 /**
  * A utility wrapper that abstracts operations on the underlying native SSL instance.
@@ -89,16 +91,14 @@ final class NativeSsl {
 
     void initSpake() throws SSLException, InvalidAlgorithmParameterException {
         Spake2PlusKeyManager spakeKeyManager = parameters.getSpake2PlusKeyManager();
-        byte[] context =
-                spakeKeyManager.getContext() == null
-                        ? "spake2+".getBytes()
-                        : spakeKeyManager.getContext();
+        byte[] context = spakeKeyManager.getContext() == null ? "spake2+".getBytes()
+                                                              : spakeKeyManager.getContext();
         byte[] idProverArray = spakeKeyManager.getIdProver();
         byte[] idVerifierArray = spakeKeyManager.getIdVerifier();
         byte[] pwArray = spakeKeyManager.getPassword();
-        byte[] w0Array = spakeKeyManager.getw0();
-        byte[] w1Array = spakeKeyManager.getw1();
-        byte[] registrationRecordArray = spakeKeyManager.getRegistrationRecord();
+        byte[] w0Array = spakeKeyManager.getW0();
+        byte[] w1Array = spakeKeyManager.getW1();
+        byte[] lArray = spakeKeyManager.getL();
         boolean isClient = spakeKeyManager.isClient();
 
         // TODO: uncomment this once the native code is ready.
@@ -111,9 +111,9 @@ final class NativeSsl {
             NativeCrypto.SSL_CTX_set_spake_credential_client(
                 context, w0Array, w1Array,
                 idProverArray, idVerifierArray, this);
-        } else if (!isClient && w0Array != null && registrationRecordArray != null) {
+        } else if (!isClient && w0Array != null && lArray != null) {
             NativeCrypto.SSL_CTX_set_spake_credential_server(
-                context, w0Array, registrationRecordArray,
+                context, w0Array, lArray,
                 idProverArray, idVerifierArray, this);
         }
         */
@@ -353,7 +353,7 @@ final class NativeSsl {
         // not registered at the moment.
         if (!parameters.isSpake()) {
             NativeCrypto.setEnabledCipherSuites(
-                ssl, this, parameters.enabledCipherSuites, parameters.enabledProtocols);
+                    ssl, this, parameters.enabledCipherSuites, parameters.enabledProtocols);
         }
 
         if (parameters.applicationProtocols.length > 0) {
@@ -395,7 +395,7 @@ final class NativeSsl {
         NativeCrypto.SSL_set_mode(ssl, this, SSL_MODE_CBC_RECORD_SPLITTING);
 
         if (!parameters.isSpake()) {
-          setCertificateValidation();
+            setCertificateValidation();
         }
         setTlsChannelId(channelIdPrivateKey);
     }

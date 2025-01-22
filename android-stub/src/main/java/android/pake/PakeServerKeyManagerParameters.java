@@ -18,9 +18,6 @@ package android.net.ssl;
 
 import static java.util.Objects.requireNonNull;
 
-import android.annotation.FlaggedApi;
-import android.annotation.SystemApi;
-
 import libcore.util.NonNull;
 import libcore.util.Nullable;
 
@@ -47,30 +44,14 @@ import javax.net.ssl.ManagerFactoryParameters;
  *
  * @hide
  */
-@SystemApi
-@FlaggedApi(com.android.org.conscrypt.flags.Flags.FLAG_SPAKE2PLUS_API)
 public final class PakeServerKeyManagerParameters implements ManagerFactoryParameters {
-    /**
-     * A map of links to their corresponding PAKE options.
-     */
-    private final Map<Link, List<PakeOption>> links;
-
-    /**
-     * Private constructor to enforce immutability.
-     *
-     * @param links A map of links to their corresponding PAKE options.
-     */
-    private PakeServerKeyManagerParameters(Map<Link, List<PakeOption>> links) {
-        this.links = Collections.unmodifiableMap(new HashMap<>(links));
-    }
-
     /**
      * Returns a set of the links.
      *
      * @return The known links.
      */
     public @NonNull Set<Link> getLinks() {
-        return Collections.unmodifiableSet(links.keySet());
+        throw new RuntimeException("Stub!");
     }
 
     /**
@@ -81,12 +62,7 @@ public final class PakeServerKeyManagerParameters implements ManagerFactoryParam
      * @return An unmodifiable list of PAKE options for the given link.
      */
     public @NonNull List<PakeOption> getOptions(@NonNull Link link) {
-        requireNonNull(link, "Link cannot be null.");
-        List<PakeOption> options = links.get(link);
-        if (options == null) {
-            throw new InvalidParameterException("Link not found.");
-        }
-        return Collections.unmodifiableList(options);
+        throw new RuntimeException("Stub!");
     }
 
     /**
@@ -98,7 +74,7 @@ public final class PakeServerKeyManagerParameters implements ManagerFactoryParam
      */
     public @NonNull List<PakeOption> getOptions(
             @Nullable byte[] clientId, @Nullable byte[] serverId) {
-        return getOptions(new Link(clientId, serverId));
+        throw new RuntimeException("Stub!");
     }
 
     /**
@@ -106,12 +82,7 @@ public final class PakeServerKeyManagerParameters implements ManagerFactoryParam
      *
      * @hide
      */
-    @SystemApi
-    @FlaggedApi(com.android.org.conscrypt.flags.Flags.FLAG_SPAKE2PLUS_API)
     public static final class Link {
-        private final byte[] clientId;
-        private final byte[] serverId;
-
         /**
          * Constructs a {@code Link} object.
          *
@@ -119,8 +90,7 @@ public final class PakeServerKeyManagerParameters implements ManagerFactoryParam
          * @param serverId The server identifier for the link.
          */
         private Link(@Nullable byte[] clientId, @Nullable byte[] serverId) {
-            this.clientId = clientId;
-            this.serverId = serverId;
+            throw new RuntimeException("Stub!");
         }
 
         /**
@@ -129,7 +99,7 @@ public final class PakeServerKeyManagerParameters implements ManagerFactoryParam
          * @return The client identifier for the link.
          */
         public @Nullable byte[] getClientId() {
-            return clientId;
+            throw new RuntimeException("Stub!");
         }
 
         /**
@@ -138,25 +108,17 @@ public final class PakeServerKeyManagerParameters implements ManagerFactoryParam
          * @return The server identifier for the link.
          */
         public @Nullable byte[] getServerId() {
-            return serverId;
+            throw new RuntimeException("Stub!");
         }
 
         @Override
         public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-            Link that = (Link) o;
-            return java.util.Arrays.equals(clientId, that.clientId)
-                    && java.util.Arrays.equals(serverId, that.serverId);
+            throw new RuntimeException("Stub!");
         }
 
         @Override
         public int hashCode() {
-            int result = java.util.Arrays.hashCode(clientId);
-            result = 31 * result + java.util.Arrays.hashCode(serverId);
-            return result;
+            throw new RuntimeException("Stub!");
         }
     }
 
@@ -165,11 +127,7 @@ public final class PakeServerKeyManagerParameters implements ManagerFactoryParam
      *
      * @hide
      */
-    @SystemApi
-    @FlaggedApi(com.android.org.conscrypt.flags.Flags.FLAG_SPAKE2PLUS_API)
     public static final class Builder {
-        private final Map<Link, List<PakeOption>> links = new HashMap<>();
-
         /**
          * Adds PAKE options for the given client and server IDs.
          * Only the first link for SPAKE2PLUS_PRERELEASE will be used.
@@ -182,37 +140,7 @@ public final class PakeServerKeyManagerParameters implements ManagerFactoryParam
          */
         public @NonNull Builder setOptions(@Nullable byte[] clientId, @Nullable byte[] serverId,
                 @NonNull List<PakeOption> options) {
-            requireNonNull(options, "options cannot be null.");
-            if (options.isEmpty()) {
-                throw new InvalidParameterException("options cannot be empty.");
-            }
-
-            Link link = new Link(clientId, serverId);
-            List<PakeOption> storedOptions = new ArrayList<PakeOption>(options.size());
-
-            for (PakeOption option : options) {
-                // Servers must have both "w0" and "L" for
-                // SPAKE2PLUS_PRERELEASE.
-                if (option.getAlgorithm().equals("SPAKE2PLUS_PRERELEASE")
-                        && option.getMessageComponent("w0") != null
-                        && option.getMessageComponent("L") == null) {
-                    throw new InvalidParameterException("SPAKE2PLUS_PRERELEASE needs L when w0 is "
-                            + "present");
-                }
-
-                // Check that options are not duplicated.
-                for (PakeOption previousOption : storedOptions) {
-                    if (previousOption.getAlgorithm().equals(option.getAlgorithm())) {
-                        throw new InvalidParameterException(
-                                "There are multiple options with the same algorithm.");
-                    }
-                }
-
-                storedOptions.add(option);
-            }
-
-            links.put(link, storedOptions);
-            return this;
+            throw new RuntimeException("Stub!");
         }
 
         /**
@@ -222,10 +150,7 @@ public final class PakeServerKeyManagerParameters implements ManagerFactoryParam
          * @throws InvalidParameterException If no links are provided.
          */
         public @NonNull PakeServerKeyManagerParameters build() {
-            if (links.isEmpty()) {
-                throw new InvalidParameterException("At least one link must be provided.");
-            }
-            return new PakeServerKeyManagerParameters(links);
+            throw new RuntimeException("Stub!");
         }
     }
 }

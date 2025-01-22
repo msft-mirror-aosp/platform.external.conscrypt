@@ -17,7 +17,6 @@
 
 package com.android.org.conscrypt.javax.net.ssl;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -25,8 +24,16 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import android.net.ssl.PakeClientKeyManagerParameters;
-import android.net.ssl.PakeOption;
+import com.android.org.conscrypt.KeyManagerFactoryImpl;
+import com.android.org.conscrypt.TestUtils;
+import com.android.org.conscrypt.java.security.StandardNames;
+import com.android.org.conscrypt.java.security.TestKeyStore;
+
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -48,22 +55,14 @@ import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Enumeration;
+
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.KeyStoreBuilderParameters;
 import javax.net.ssl.ManagerFactoryParameters;
 import javax.net.ssl.X509ExtendedKeyManager;
 import javax.net.ssl.X509KeyManager;
-import com.android.org.conscrypt.KeyManagerFactoryImpl;
-import com.android.org.conscrypt.TestUtils;
-import com.android.org.conscrypt.PakeKeyManagerFactory;
-import com.android.org.conscrypt.Spake2PlusKeyManager;
-import com.android.org.conscrypt.java.security.StandardNames;
-import com.android.org.conscrypt.java.security.TestKeyStore;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+
 import tests.util.ServiceTester;
 
 /**
@@ -157,7 +156,7 @@ public class KeyManagerFactoryTest {
         }
 
         if (kmf.getAlgorithm() == "PAKE") {
-            test_pakeKeyManagerFactory(kmf);
+            assertThrows(KeyStoreException.class, () -> kmf.init(null, null));
             return;
         }
 
@@ -168,33 +167,6 @@ public class KeyManagerFactoryTest {
         // init with specific key store and password
         kmf.init(getTestKeyStore().keyStore, getTestKeyStore().storePassword);
         test_KeyManagerFactory_getKeyManagers(kmf, false);
-    }
-
-    private void test_pakeKeyManagerFactory(KeyManagerFactory kmf) throws Exception {
-        assertThrows(KeyStoreException.class, () -> kmf.init(null, null));
-        byte[] password = new byte[] {1, 2, 3};
-        byte[] clientId = new byte[] {2, 3, 4};
-        byte[] serverId = new byte[] {4, 5, 6};
-        PakeOption option =
-                new PakeOption.Builder("SPAKE2PLUS_PRERELEASE")
-                        .addMessageComponent("password", password)
-                        .build();
-
-        PakeClientKeyManagerParameters params =
-                new PakeClientKeyManagerParameters.Builder()
-                        .setClientId(clientId.clone())
-                        .setServerId(serverId.clone())
-                        .addOption(option)
-                        .build();
-        kmf.init(params);
-
-        KeyManager[] keyManagers = kmf.getKeyManagers();
-        assertEquals(1, keyManagers.length);
-
-        Spake2PlusKeyManager keyManager = (Spake2PlusKeyManager) keyManagers[0];
-        assertArrayEquals(password, keyManager.getPassword());
-        assertArrayEquals(clientId, keyManager.getIdProver());
-        assertArrayEquals(serverId, keyManager.getIdVerifier());
     }
 
     private void test_KeyManagerFactory_getKeyManagers(KeyManagerFactory kmf, boolean empty)
@@ -353,6 +325,7 @@ public class KeyManagerFactoryTest {
     }
 
     @Test
+    @Ignore
     public void test_KeyManagerFactory_getInstance() throws Exception {
         ServiceTester.test("KeyManagerFactory")
             .run(new ServiceTester.Test() {

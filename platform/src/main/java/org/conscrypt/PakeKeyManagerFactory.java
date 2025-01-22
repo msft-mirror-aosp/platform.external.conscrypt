@@ -15,12 +15,13 @@
  */
 package org.conscrypt;
 
-import static java.util.Objects.requireNonNull;
 import static android.net.ssl.PakeServerKeyManagerParameters.Link;
 
+import static java.util.Objects.requireNonNull;
+
 import android.net.ssl.PakeClientKeyManagerParameters;
-import android.net.ssl.PakeServerKeyManagerParameters;
 import android.net.ssl.PakeOption;
+import android.net.ssl.PakeServerKeyManagerParameters;
 
 import org.conscrypt.io.IoUtils;
 
@@ -28,14 +29,14 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Set;
-import java.util.List;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.util.List;
+import java.util.Set;
 
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactorySpi;
@@ -69,9 +70,7 @@ public class PakeKeyManagerFactory extends KeyManagerFactorySpi {
         if (clientParams != null || serverParams != null) {
             throw new IllegalStateException("PakeKeyManagerFactory is already initialized");
         }
-        if (spec == null) {
-            throw new InvalidAlgorithmParameterException("ManagerFactoryParameters cannot be null");
-        }
+        requireNonNull(spec);
         if (spec instanceof PakeClientKeyManagerParameters) {
             clientParams = (PakeClientKeyManagerParameters) spec;
         } else if (spec instanceof PakeServerKeyManagerParameters) {
@@ -107,14 +106,14 @@ public class PakeKeyManagerFactory extends KeyManagerFactorySpi {
             byte[] context = option.getMessageComponent("context");
             byte[] password = option.getMessageComponent("password");
             if (password != null) {
-                return new KeyManager[] { new Spake2PlusKeyManager(
-                        context, password, null, null, null, idProver, idVerifier, true) };
+                return new KeyManager[] {new Spake2PlusKeyManager(
+                        context, password, null, null, null, idProver, idVerifier, true)};
             }
             byte[] w0 = option.getMessageComponent("w0");
             byte[] w1 = option.getMessageComponent("w1");
             if (w0 != null && w1 != null) {
-                return new KeyManager[] { new Spake2PlusKeyManager(
-                        context, null, w0, w1, null, idProver, idVerifier, true) };
+                return new KeyManager[] {new Spake2PlusKeyManager(
+                        context, null, w0, w1, null, idProver, idVerifier, true)};
             }
             break;
         }
@@ -134,14 +133,14 @@ public class PakeKeyManagerFactory extends KeyManagerFactorySpi {
                 byte[] context = option.getMessageComponent("context");
                 byte[] password = option.getMessageComponent("password");
                 if (password != null) {
-                    return new KeyManager[] { new Spake2PlusKeyManager(
-                            context, password, null, null, null, idProver, idVerifier, false) };
+                    return new KeyManager[] {new Spake2PlusKeyManager(
+                            context, password, null, null, null, idProver, idVerifier, false)};
                 }
                 byte[] w0 = option.getMessageComponent("w0");
-                byte[] registrationRecord = option.getMessageComponent("registrationRecord");
-                if (w0 != null && registrationRecord != null) {
-                    return new KeyManager[] { new Spake2PlusKeyManager(
-                            context, null, w0, null, registrationRecord, idProver, idVerifier, false) };
+                byte[] l = option.getMessageComponent("L");
+                if (w0 != null && l != null) {
+                    return new KeyManager[] {new Spake2PlusKeyManager(
+                            context, null, w0, null, l, idProver, idVerifier, false)};
                 }
                 break;
             }
@@ -149,4 +148,3 @@ public class PakeKeyManagerFactory extends KeyManagerFactorySpi {
         return new KeyManager[] {};
     }
 }
-

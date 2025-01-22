@@ -31,6 +31,10 @@ import libcore.net.NetworkSecurityPolicy;
 
 import org.conscrypt.NativeCrypto;
 import org.conscrypt.ct.CertificateTransparency;
+import org.conscrypt.ct.LogStore;
+import org.conscrypt.ct.LogStoreImpl;
+import org.conscrypt.ct.Policy;
+import org.conscrypt.ct.PolicyImpl;
 import org.conscrypt.flags.Flags;
 import org.conscrypt.metrics.CertificateTransparencyVerificationReason;
 import org.conscrypt.metrics.OptionalMethod;
