@@ -16,6 +16,7 @@
 
 package org.conscrypt.javax.net.ssl;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -156,9 +157,9 @@ public class KeyManagerFactoryTest {
             }
         }
 
-        if (kmf.getAlgorithm() == "PAKE") {
+        if (kmf.getAlgorithm().equals("PAKE")) {
             assertThrows(KeyStoreException.class, () -> kmf.init(null, null));
-            return;
+            return; // Functional testing is in PakeKeyManagerFactoryTest
         }
 
         // init with null for default behavior

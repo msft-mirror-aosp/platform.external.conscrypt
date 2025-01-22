@@ -17,6 +17,7 @@
 
 package com.android.org.conscrypt.javax.net.ssl;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -30,7 +31,6 @@ import com.android.org.conscrypt.java.security.StandardNames;
 import com.android.org.conscrypt.java.security.TestKeyStore;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -155,9 +155,9 @@ public class KeyManagerFactoryTest {
             }
         }
 
-        if (kmf.getAlgorithm() == "PAKE") {
+        if (kmf.getAlgorithm().equals("PAKE")) {
             assertThrows(KeyStoreException.class, () -> kmf.init(null, null));
-            return;
+            return; // Functional testing is in PakeKeyManagerFactoryTest
         }
 
         // init with null for default behavior
@@ -325,7 +325,6 @@ public class KeyManagerFactoryTest {
     }
 
     @Test
-    @Ignore
     public void test_KeyManagerFactory_getInstance() throws Exception {
         ServiceTester.test("KeyManagerFactory")
             .run(new ServiceTester.Test() {
