@@ -181,9 +181,9 @@ public class LogStoreImplTest {
                         .build();
         byte[] log1Id = Base64.getDecoder().decode("7s3QZNXbGs7FXLedtM0TojKHRny87N7DUUhZRnEftZs=");
         assertEquals("An existing logId should be returned", log1, store.getKnownLog(log1Id));
-        assertEquals("One metric update should be emitted", metrics.states.size(), 1);
+        assertEquals("One metric update should be emitted", 1, metrics.states.size());
         assertEquals("The metric update for log list state should be compliant",
-                metrics.states.get(0), LogStore.State.COMPLIANT);
+                LogStore.State.COMPLIANT, metrics.states.get(0));
     }
 
     @Test
@@ -194,10 +194,10 @@ public class LogStoreImplTest {
         LogStore store = new LogStoreImpl(alwaysCompliantStorePolicy, logList, metrics);
 
         assertEquals(
-                "The log state should be malformed", store.getState(), LogStore.State.MALFORMED);
-        assertEquals("One metric update should be emitted", metrics.states.size(), 1);
+                "The log state should be malformed", LogStore.State.MALFORMED, store.getState());
+        assertEquals("One metric update should be emitted", 1, metrics.states.size());
         assertEquals("The metric update for log list state should be malformed",
-                metrics.states.get(0), LogStore.State.MALFORMED);
+                LogStore.State.MALFORMED, metrics.states.get(0));
     }
 
     @Test
@@ -207,10 +207,10 @@ public class LogStoreImplTest {
         LogStore store = new LogStoreImpl(alwaysCompliantStorePolicy, logList, metrics);
 
         assertEquals(
-                "The log state should be not found", store.getState(), LogStore.State.NOT_FOUND);
-        assertEquals("One metric update should be emitted", metrics.states.size(), 1);
+                "The log state should be not found", LogStore.State.NOT_FOUND, store.getState());
+        assertEquals("One metric update should be emitted", 1, metrics.states.size());
         assertEquals("The metric update for log list state should be not found",
-                metrics.states.get(0), LogStore.State.NOT_FOUND);
+                LogStore.State.NOT_FOUND, metrics.states.get(0));
     }
 
     private Path writeFile(String content) throws IOException {
