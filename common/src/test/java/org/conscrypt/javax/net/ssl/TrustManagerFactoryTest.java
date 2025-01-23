@@ -84,12 +84,8 @@ public class TrustManagerFactoryTest {
         assertNotNull(tmf.getAlgorithm());
         assertNotNull(tmf.getProvider());
 
-        if (tmf.getAlgorithm() == "PAKE") {
-            return;
-        }
-
         // before init
-        if (tmf.getAlgorithm() != "PAKE") {
+        if (!tmf.getAlgorithm().equals("PAKE")) {
             try {
                 tmf.getTrustManagers();
                 fail();
@@ -148,7 +144,7 @@ public class TrustManagerFactoryTest {
         test_TrustManagerFactory_getTrustManagers(tmf);
 
         // init with specific key store
-        if (tmf.getAlgorithm() != "PAKE") {
+        if (!tmf.getAlgorithm().equals("PAKE")) {
             tmf.init(getTestKeyStore().keyStore);
             test_TrustManagerFactory_getTrustManagers(tmf);
         }
