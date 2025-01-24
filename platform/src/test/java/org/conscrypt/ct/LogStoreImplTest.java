@@ -157,20 +157,16 @@ public class LogStoreImplTest {
     }
 
     @Test
-    public void test_loadValidLogList() throws Exception {
+    public void loadValidLogList_Succeeds() throws Exception {
         FakeStatsLog metrics = new FakeStatsLog();
         logList = writeFile(validLogList);
         LogStore store = new LogStoreImpl(alwaysCompliantStorePolicy, logList, metrics);
-
-        assertNull("A null logId should return null", store.getKnownLog(null));
-
         byte[] pem = ("-----BEGIN PUBLIC KEY-----\n"
                 + "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEHblsqctplMVc5ramA7vSuNxUQxcomQwGAVAdnWTAWUYr"
                 + "3MgDHQW0LagJ95lB7QT75Ve6JgT2EVLOFGU7L3YrwA=="
                 + "\n-----END PUBLIC KEY-----\n")
                              .getBytes(US_ASCII);
         ByteArrayInputStream is = new ByteArrayInputStream(pem);
-
         LogInfo log1 =
                 new LogInfo.Builder()
                         .setPublicKey(OpenSSLKey.fromPublicKeyPemInputStream(is).getPublicKey())
@@ -180,6 +176,8 @@ public class LogStoreImplTest {
                         .setOperator("Operator 1")
                         .build();
         byte[] log1Id = Base64.getDecoder().decode("7s3QZNXbGs7FXLedtM0TojKHRny87N7DUUhZRnEftZs=");
+
+        assertNull("A null logId should return null", store.getKnownLog(null));
         assertEquals("An existing logId should be returned", log1, store.getKnownLog(log1Id));
         assertEquals("One metric update should be emitted", 1, metrics.states.size());
         assertEquals("The metric update for log list state should be compliant",
@@ -187,7 +185,7 @@ public class LogStoreImplTest {
     }
 
     @Test
-    public void test_loadMalformedLogList() throws Exception {
+    public void loadMalformedLogList_Fails() throws Exception {
         FakeStatsLog metrics = new FakeStatsLog();
         String content = "}}";
         logList = writeFile(content);
@@ -201,7 +199,7 @@ public class LogStoreImplTest {
     }
 
     @Test
-    public void test_loadMissingLogList() throws Exception {
+    public void loadMissingLogList_Fails() throws Exception {
         FakeStatsLog metrics = new FakeStatsLog();
         logList = Paths.get("does_not_exist");
         LogStore store = new LogStoreImpl(alwaysCompliantStorePolicy, logList, metrics);
