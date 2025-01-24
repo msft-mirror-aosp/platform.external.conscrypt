@@ -26,18 +26,21 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import com.android.org.conscrypt.OpenSSLKey;
 import com.android.org.conscrypt.metrics.NoopStatsLog;
 
+import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
@@ -81,10 +84,8 @@ public class LogStoreImplTest {
         }
     };
 
-    @Test
-    public void test_loadValidLogList() throws Exception {
-        // clang-format off
-        String content = "" +
+    // clang-format off
+    static final String validLogList = "" +
 "{" +
 "  \"version\": \"1.1\"," +
 "  \"log_list_timestamp\": 1704070861000," +
@@ -151,11 +152,20 @@ public class LogStoreImplTest {
 "    }" +
 "  ]" +
 "}";
-        // clang-format on
+    // clang-format on
 
+    Path logList;
+
+    @After
+    public void tearDown() throws Exception {
+        Files.deleteIfExists(logList);
+    }
+
+    @Test
+    public void test_loadValidLogList() throws Exception {
         FakeStatsLog metrics = new FakeStatsLog();
-        File logList = writeFile(content);
-        LogStore store = new LogStoreImpl(alwaysCompliantStorePolicy, logList.toPath(), metrics);
+        logList = writeFile(validLogList);
+        LogStore store = new LogStoreImpl(alwaysCompliantStorePolicy, logList, metrics);
 
         assertNull("A null logId should return null", store.getKnownLog(null));
 
@@ -185,8 +195,8 @@ public class LogStoreImplTest {
     public void test_loadMalformedLogList() throws Exception {
         FakeStatsLog metrics = new FakeStatsLog();
         String content = "}}";
-        File logList = writeFile(content);
-        LogStore store = new LogStoreImpl(alwaysCompliantStorePolicy, logList.toPath(), metrics);
+        logList = writeFile(content);
+        LogStore store = new LogStoreImpl(alwaysCompliantStorePolicy, logList, metrics);
 
         assertEquals(
                 "The log state should be malformed", store.getState(), LogStore.State.MALFORMED);
@@ -198,8 +208,8 @@ public class LogStoreImplTest {
     @Test
     public void test_loadMissingLogList() throws Exception {
         FakeStatsLog metrics = new FakeStatsLog();
-        File logList = new File("does_not_exist");
-        LogStore store = new LogStoreImpl(alwaysCompliantStorePolicy, logList.toPath(), metrics);
+        logList = Paths.get("does_not_exist");
+        LogStore store = new LogStoreImpl(alwaysCompliantStorePolicy, logList, metrics);
 
         assertEquals(
                 "The log state should be not found", store.getState(), LogStore.State.NOT_FOUND);
@@ -208,12 +218,9 @@ public class LogStoreImplTest {
                 metrics.states.get(0), LogStore.State.NOT_FOUND);
     }
 
-    private File writeFile(String content) throws IOException {
-        File file = File.createTempFile("test", null);
-        file.deleteOnExit();
-        try (FileWriter fw = new FileWriter(file)) {
-            fw.write(content);
-        }
+    private Path writeFile(String content) throws IOException {
+        Path file = Files.createTempFile("test", null);
+        Files.write(file, content.getBytes());
         return file;
     }
 }
