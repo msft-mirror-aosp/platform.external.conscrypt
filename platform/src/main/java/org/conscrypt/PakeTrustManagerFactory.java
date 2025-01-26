@@ -64,6 +64,6 @@ public class PakeTrustManagerFactory extends TrustManagerFactorySpi {
      */
     @Override
     public TrustManager[] engineGetTrustManagers() {
-        return new TrustManager[] { new Spake2PlusTrustManager() };
+        return new TrustManager[] {new Spake2PlusTrustManager()};
     }
 }

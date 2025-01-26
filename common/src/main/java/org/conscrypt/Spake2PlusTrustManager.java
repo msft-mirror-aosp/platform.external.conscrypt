@@ -23,10 +23,10 @@ import javax.net.ssl.TrustManager;
  */
 @Internal
 public class Spake2PlusTrustManager implements TrustManager {
+    Spake2PlusTrustManager() {}
 
-  Spake2PlusTrustManager() {}
+    public void checkClientTrusted() {}
 
-  public void checkClientTrusted() {}
-
-  public void checkServerTrusted() {}
+    public void checkServerTrusted() {}
 }
+

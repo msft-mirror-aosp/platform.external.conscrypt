@@ -22,14 +22,17 @@ import static org.junit.Assert.assertThrows;
 
 import android.net.ssl.PakeClientKeyManagerParameters;
 import android.net.ssl.PakeOption;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.ManagerFactoryParameters;
-import java.security.KeyStoreException;
-import java.security.InvalidAlgorithmParameterException;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+
+import java.security.InvalidAlgorithmParameterException;
+import java.security.KeyStoreException;
+
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.ManagerFactoryParameters;
+import javax.net.ssl.TrustManager;
 
 /**
  * @hide This class is not part of the Android public SDK API
@@ -43,10 +46,9 @@ public class PakeManagerFactoriesTest {
         PakeKeyManagerFactory keyManagerFactory = new PakeKeyManagerFactory();
 
         byte[] password = new byte[] {1, 2, 3};
-        PakeOption option =
-                new PakeOption.Builder("SPAKE2PLUS_PRERELEASE")
-                        .addMessageComponent("password", password)
-                        .build();
+        PakeOption option = new PakeOption.Builder("SPAKE2PLUS_PRERELEASE")
+                                    .addMessageComponent("password", password)
+                                    .build();
 
         assertThrows(KeyStoreException.class, () -> keyManagerFactory.engineInit(null, null));
 
@@ -59,8 +61,7 @@ public class PakeManagerFactoriesTest {
 
         PakeTrustManagerFactory trustManagerFactory = new PakeTrustManagerFactory();
         // The trust manager factory does not accept parameters
-        assertThrows(
-                InvalidAlgorithmParameterException.class,
+        assertThrows(InvalidAlgorithmParameterException.class,
                 () -> trustManagerFactory.engineInit(params));
         trustManagerFactory.engineInit((ManagerFactoryParameters) null);
     }
@@ -71,17 +72,15 @@ public class PakeManagerFactoriesTest {
         assertThrows(IllegalStateException.class, () -> factory.engineGetKeyManagers());
 
         byte[] password = new byte[] {1, 2, 3};
-        PakeOption option =
-                new PakeOption.Builder("SPAKE2PLUS_PRERELEASE")
-                        .addMessageComponent("password", password)
-                        .build();
+        PakeOption option = new PakeOption.Builder("SPAKE2PLUS_PRERELEASE")
+                                    .addMessageComponent("password", password)
+                                    .build();
 
-        PakeClientKeyManagerParameters params =
-                new PakeClientKeyManagerParameters.Builder()
-                        .setClientId(CLIENT_ID.clone())
-                        .setServerId(SERVER_ID.clone())
-                        .addOption(option)
-                        .build();
+        PakeClientKeyManagerParameters params = new PakeClientKeyManagerParameters.Builder()
+                                                        .setClientId(CLIENT_ID.clone())
+                                                        .setServerId(SERVER_ID.clone())
+                                                        .addOption(option)
+                                                        .build();
 
         factory.engineInit(params);
         KeyManager[] keyManagers = factory.engineGetKeyManagers();
