@@ -16,6 +16,7 @@
 
 package android.net.ssl;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
@@ -27,8 +28,8 @@ import org.junit.runners.JUnit4;
 
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -39,12 +40,17 @@ public class PakeServerKeyManagerParametersTest {
     private static final byte[] CLIENT_ID_2 = new byte[] {7, 8, 9};
     private static final byte[] SERVER_ID_2 = new byte[] {10, 11, 12};
     private static final byte[] PASSWORD_BYTES = new byte[] {1, 2, 3};
+    private static final byte[] W_VALID = new byte[32];
+    private static final byte[] L_VALID = new byte[65];
 
     @Test
     @RequiresFlagsEnabled(com.android.org.conscrypt.flags.Flags.FLAG_SPAKE2PLUS_API)
     public void testBuilder_valid() {
         PakeOption option1 = createOption("SPAKE2PLUS_PRERELEASE", "password");
-        PakeOption option2 = createOption("SPAKE2PLUS_PRERELEASE", "w0", "registration_record");
+        PakeOption option2 = new PakeOption.Builder("SPAKE2PLUS_PRERELEASE")
+                                     .addMessageComponent("w0", W_VALID.clone())
+                                     .addMessageComponent("L", L_VALID.clone())
+                                     .build();
 
         PakeServerKeyManagerParameters params =
                 new PakeServerKeyManagerParameters.Builder()
@@ -97,16 +103,18 @@ public class PakeServerKeyManagerParametersTest {
                         .setOptions(CLIENT_ID_1, SERVER_ID_1, List.of(option1))
                         .build();
 
-        PakeServerKeyManagerParameters.Link nonExistingLink =
-                new PakeServerKeyManagerParameters.Link(CLIENT_ID_2, SERVER_ID_2);
-        assertThrows(InvalidParameterException.class, () -> params.getOptions(nonExistingLink));
+        assertThrows(
+                InvalidParameterException.class, () -> params.getOptions(CLIENT_ID_2, SERVER_ID_2));
     }
 
     @Test
     @RequiresFlagsEnabled(com.android.org.conscrypt.flags.Flags.FLAG_SPAKE2PLUS_API)
     public void testGetLinks() {
         PakeOption option1 = createOption("SPAKE2PLUS_PRERELEASE", "password");
-        PakeOption option2 = createOption("SPAKE2PLUS_PRERELEASE", "w0", "registration_record");
+        PakeOption option2 = new PakeOption.Builder("SPAKE2PLUS_PRERELEASE")
+                                     .addMessageComponent("w0", W_VALID.clone())
+                                     .addMessageComponent("L", L_VALID.clone())
+                                     .build();
 
         PakeServerKeyManagerParameters params =
                 new PakeServerKeyManagerParameters.Builder()
@@ -114,20 +122,25 @@ public class PakeServerKeyManagerParametersTest {
                         .setOptions(CLIENT_ID_2, SERVER_ID_2, List.of(option2))
                         .build();
 
-        PakeServerKeyManagerParameters.Link link1 =
-                new PakeServerKeyManagerParameters.Link(CLIENT_ID_1, SERVER_ID_1);
-        PakeServerKeyManagerParameters.Link link2 =
-                new PakeServerKeyManagerParameters.Link(CLIENT_ID_2, SERVER_ID_2);
-        Set<PakeServerKeyManagerParameters.Link> expectedLinks = new HashSet<>();
-        expectedLinks.add(link1);
-        expectedLinks.add(link2);
-        assertEquals(expectedLinks, params.getLinks());
+        for (PakeServerKeyManagerParameters.Link link : params.getLinks()) {
+            if (Arrays.equals(CLIENT_ID_1, link.getClientId())) {
+                assertArrayEquals(SERVER_ID_1, link.getServerId());
+                assertEquals(option1, params.getOptions(link).get(0));
+            } else {
+                assertArrayEquals(CLIENT_ID_2, link.getClientId());
+                assertArrayEquals(SERVER_ID_2, link.getServerId());
+                assertEquals(option2, params.getOptions(link).get(0));
+            }
+        }
     }
 
     @Test
     @RequiresFlagsEnabled(com.android.org.conscrypt.flags.Flags.FLAG_SPAKE2PLUS_API)
-    public void testBuilder_spake2PlusPrerelease_w0WithoutRegistrationRecord() {
-        PakeOption option = createOption("SPAKE2PLUS_PRERELEASE", "w0", "w1");
+    public void testBuilder_spake2PlusPrerelease_w0WithoutL() {
+        PakeOption option = new PakeOption.Builder("SPAKE2PLUS_PRERELEASE")
+                                    .addMessageComponent("w0", W_VALID.clone())
+                                    .addMessageComponent("w1", W_VALID.clone())
+                                    .build();
         assertThrows(InvalidParameterException.class,
                 ()
                         -> new PakeServerKeyManagerParameters.Builder().setOptions(
@@ -136,15 +149,16 @@ public class PakeServerKeyManagerParametersTest {
 
     @Test
     @RequiresFlagsEnabled(com.android.org.conscrypt.flags.Flags.FLAG_SPAKE2PLUS_API)
-    public void testBuilder_spake2PlusPrerelease_w0WithRegistrationRecord() {
-        PakeOption option = createOption("SPAKE2PLUS_PRERELEASE", "w0", "registration_record");
+    public void testBuilder_spake2PlusPrerelease_w0WithL() {
+        PakeOption option = new PakeOption.Builder("SPAKE2PLUS_PRERELEASE")
+                                    .addMessageComponent("w0", W_VALID.clone())
+                                    .addMessageComponent("L", L_VALID.clone())
+                                    .build();
         PakeServerKeyManagerParameters params =
                 new PakeServerKeyManagerParameters.Builder()
                         .setOptions(CLIENT_ID_1, SERVER_ID_1, List.of(option))
                         .build();
-        PakeServerKeyManagerParameters.Link link =
-                new PakeServerKeyManagerParameters.Link(CLIENT_ID_1, SERVER_ID_1);
-        assertEquals(option, params.getOptions(link).get(0));
+        assertEquals(option, params.getOptions(CLIENT_ID_1, SERVER_ID_1).get(0));
     }
 
     private static PakeOption createOption(String algorithm, String... keys) {

@@ -31,6 +31,10 @@ import libcore.net.NetworkSecurityPolicy;
 
 import org.conscrypt.NativeCrypto;
 import org.conscrypt.ct.CertificateTransparency;
+import org.conscrypt.ct.LogStore;
+import org.conscrypt.ct.LogStoreImpl;
+import org.conscrypt.ct.Policy;
+import org.conscrypt.ct.PolicyImpl;
 import org.conscrypt.flags.Flags;
 import org.conscrypt.metrics.CertificateTransparencyVerificationReason;
 import org.conscrypt.metrics.OptionalMethod;
@@ -586,6 +590,10 @@ final public class Platform {
 
     public static boolean isTlsV1Supported() {
         return ENABLED_TLS_V1;
+    }
+
+    public static boolean isPakeSupported() {
+        return true;
     }
 
     static Object getTargetSdkVersion() {

@@ -74,9 +74,10 @@ public final class PakeServerKeyManagerParameters implements ManagerFactoryParam
     }
 
     /**
-     * Returns an unmodifiable list of PAKE options for the given link.
+     * Returns an unmodifiable list of PAKE options for the given {@link Link}.
      *
-     * @param link The link for which to retrieve the options.
+     * @param link The link for which to retrieve the options. Should have been obtained through
+     *             {@link #getLinks}.
      * @return An unmodifiable list of PAKE options for the given link.
      */
     public @NonNull List<PakeOption> getOptions(@NonNull Link link) {
@@ -117,7 +118,7 @@ public final class PakeServerKeyManagerParameters implements ManagerFactoryParam
          * @param clientId The client identifier for the link.
          * @param serverId The server identifier for the link.
          */
-        public Link(@Nullable byte[] clientId, @Nullable byte[] serverId) {
+        private Link(@Nullable byte[] clientId, @Nullable byte[] serverId) {
             this.clientId = clientId;
             this.serverId = serverId;
         }
@@ -171,6 +172,7 @@ public final class PakeServerKeyManagerParameters implements ManagerFactoryParam
 
         /**
          * Adds PAKE options for the given client and server IDs.
+         * Only the first link for SPAKE2PLUS_PRERELEASE will be used.
          *
          * @param clientId The client ID.
          * @param serverId The server ID.
@@ -189,13 +191,12 @@ public final class PakeServerKeyManagerParameters implements ManagerFactoryParam
             List<PakeOption> storedOptions = new ArrayList<PakeOption>(options.size());
 
             for (PakeOption option : options) {
-                // Servers must have both "w0" and "registration_record" for
+                // Servers must have both "w0" and "L" for
                 // SPAKE2PLUS_PRERELEASE.
                 if (option.getAlgorithm().equals("SPAKE2PLUS_PRERELEASE")
                         && option.getMessageComponent("w0") != null
-                        && option.getMessageComponent("registration_record") == null) {
-                    throw new InvalidParameterException(
-                            "SPAKE2PLUS_PRERELEASE needs registration_record when w0 is "
+                        && option.getMessageComponent("L") == null) {
+                    throw new InvalidParameterException("SPAKE2PLUS_PRERELEASE needs L when w0 is "
                             + "present");
                 }
 

@@ -16,28 +16,36 @@
 
 package org.conscrypt.ct;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import junit.framework.TestCase;
-
 import org.conscrypt.OpenSSLKey;
 import org.conscrypt.metrics.NoopStatsLog;
+import org.junit.After;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Base64;
 
-public class LogStoreImplTest extends TestCase {
+@RunWith(JUnit4.class)
+public class LogStoreImplTest {
     static class FakeStatsLog extends NoopStatsLog {
         public ArrayList<LogStore.State> states = new ArrayList<LogStore.State>();
 
@@ -71,9 +79,8 @@ public class LogStoreImplTest extends TestCase {
         }
     };
 
-    public void test_loadValidLogList() throws Exception {
-        // clang-format off
-        String content = "" +
+    // clang-format off
+    static final String validLogList = "" +
 "{" +
 "  \"version\": \"1.1\"," +
 "  \"log_list_timestamp\": 1704070861000," +
@@ -140,21 +147,26 @@ public class LogStoreImplTest extends TestCase {
 "    }" +
 "  ]" +
 "}";
-        // clang-format on
+    // clang-format on
 
+    Path logList;
+
+    @After
+    public void tearDown() throws Exception {
+        Files.deleteIfExists(logList);
+    }
+
+    @Test
+    public void loadValidLogList_Succeeds() throws Exception {
         FakeStatsLog metrics = new FakeStatsLog();
-        File logList = writeFile(content);
-        LogStore store = new LogStoreImpl(alwaysCompliantStorePolicy, logList.toPath(), metrics);
-
-        assertNull("A null logId should return null", store.getKnownLog(null));
-
+        logList = writeFile(validLogList);
+        LogStore store = new LogStoreImpl(alwaysCompliantStorePolicy, logList, metrics);
         byte[] pem = ("-----BEGIN PUBLIC KEY-----\n"
                 + "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEHblsqctplMVc5ramA7vSuNxUQxcomQwGAVAdnWTAWUYr"
                 + "3MgDHQW0LagJ95lB7QT75Ve6JgT2EVLOFGU7L3YrwA=="
                 + "\n-----END PUBLIC KEY-----\n")
                              .getBytes(US_ASCII);
         ByteArrayInputStream is = new ByteArrayInputStream(pem);
-
         LogInfo log1 =
                 new LogInfo.Builder()
                         .setPublicKey(OpenSSLKey.fromPublicKeyPemInputStream(is).getPublicKey())
@@ -164,43 +176,44 @@ public class LogStoreImplTest extends TestCase {
                         .setOperator("Operator 1")
                         .build();
         byte[] log1Id = Base64.getDecoder().decode("7s3QZNXbGs7FXLedtM0TojKHRny87N7DUUhZRnEftZs=");
+
+        assertNull("A null logId should return null", store.getKnownLog(null));
         assertEquals("An existing logId should be returned", log1, store.getKnownLog(log1Id));
-        assertEquals("One metric update should be emitted", metrics.states.size(), 1);
+        assertEquals("One metric update should be emitted", 1, metrics.states.size());
         assertEquals("The metric update for log list state should be compliant",
-                metrics.states.get(0), LogStore.State.COMPLIANT);
+                LogStore.State.COMPLIANT, metrics.states.get(0));
     }
 
-    public void test_loadMalformedLogList() throws Exception {
+    @Test
+    public void loadMalformedLogList_Fails() throws Exception {
         FakeStatsLog metrics = new FakeStatsLog();
         String content = "}}";
-        File logList = writeFile(content);
-        LogStore store = new LogStoreImpl(alwaysCompliantStorePolicy, logList.toPath(), metrics);
+        logList = writeFile(content);
+        LogStore store = new LogStoreImpl(alwaysCompliantStorePolicy, logList, metrics);
 
         assertEquals(
-                "The log state should be malformed", store.getState(), LogStore.State.MALFORMED);
-        assertEquals("One metric update should be emitted", metrics.states.size(), 1);
+                "The log state should be malformed", LogStore.State.MALFORMED, store.getState());
+        assertEquals("One metric update should be emitted", 1, metrics.states.size());
         assertEquals("The metric update for log list state should be malformed",
-                metrics.states.get(0), LogStore.State.MALFORMED);
+                LogStore.State.MALFORMED, metrics.states.get(0));
     }
 
-    public void test_loadMissingLogList() throws Exception {
+    @Test
+    public void loadMissingLogList_Fails() throws Exception {
         FakeStatsLog metrics = new FakeStatsLog();
-        File logList = new File("does_not_exist");
-        LogStore store = new LogStoreImpl(alwaysCompliantStorePolicy, logList.toPath(), metrics);
+        logList = Paths.get("does_not_exist");
+        LogStore store = new LogStoreImpl(alwaysCompliantStorePolicy, logList, metrics);
 
         assertEquals(
-                "The log state should be not found", store.getState(), LogStore.State.NOT_FOUND);
-        assertEquals("One metric update should be emitted", metrics.states.size(), 1);
+                "The log state should be not found", LogStore.State.NOT_FOUND, store.getState());
+        assertEquals("One metric update should be emitted", 1, metrics.states.size());
         assertEquals("The metric update for log list state should be not found",
-                metrics.states.get(0), LogStore.State.NOT_FOUND);
+                LogStore.State.NOT_FOUND, metrics.states.get(0));
     }
 
-    private File writeFile(String content) throws IOException {
-        File file = File.createTempFile("test", null);
-        file.deleteOnExit();
-        try (FileWriter fw = new FileWriter(file)) {
-            fw.write(content);
-        }
+    private Path writeFile(String content) throws IOException {
+        Path file = Files.createTempFile("test", null);
+        Files.write(file, content.getBytes());
         return file;
     }
 }

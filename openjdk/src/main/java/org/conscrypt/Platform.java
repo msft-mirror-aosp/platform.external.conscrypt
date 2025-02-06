@@ -99,7 +99,7 @@ final public class Platform {
     private static final Method GET_CURVE_NAME_METHOD;
     static boolean DEPRECATED_TLS_V1 = true;
     static boolean ENABLED_TLS_V1 = false;
-    private static boolean FILTERED_TLS_V1 = true;
+    private static boolean FILTERED_TLS_V1 = false;
 
     static {
         NativeCrypto.setTlsV1DeprecationStatus(DEPRECATED_TLS_V1, ENABLED_TLS_V1);
@@ -860,5 +860,9 @@ final public class Platform {
 
     public static boolean isTlsV1Supported() {
         return ENABLED_TLS_V1;
+    }
+
+    public static boolean isPakeSupported() {
+        return false;
     }
 }

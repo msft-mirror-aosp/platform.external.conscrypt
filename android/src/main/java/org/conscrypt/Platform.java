@@ -30,6 +30,7 @@ import dalvik.system.CloseGuard;
 import org.conscrypt.NativeCrypto;
 import org.conscrypt.ct.CertificateTransparency;
 import org.conscrypt.metrics.CertificateTransparencyVerificationReason;
+import org.conscrypt.metrics.NoopStatsLog;
 import org.conscrypt.metrics.Source;
 import org.conscrypt.metrics.StatsLog;
 import org.conscrypt.metrics.StatsLogImpl;
@@ -975,5 +976,9 @@ final public class Platform {
 
     public static boolean isTlsV1Supported() {
         return ENABLED_TLS_V1;
+    }
+
+    public static boolean isPakeSupported() {
+        return false;
     }
 }

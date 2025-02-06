@@ -17,11 +17,23 @@
 
 package com.android.org.conscrypt.javax.net.ssl;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import com.android.org.conscrypt.KeyManagerFactoryImpl;
+import com.android.org.conscrypt.TestUtils;
+import com.android.org.conscrypt.java.security.StandardNames;
+import com.android.org.conscrypt.java.security.TestKeyStore;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,20 +55,14 @@ import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Enumeration;
+
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.KeyStoreBuilderParameters;
 import javax.net.ssl.ManagerFactoryParameters;
 import javax.net.ssl.X509ExtendedKeyManager;
 import javax.net.ssl.X509KeyManager;
-import com.android.org.conscrypt.KeyManagerFactoryImpl;
-import com.android.org.conscrypt.TestUtils;
-import com.android.org.conscrypt.java.security.StandardNames;
-import com.android.org.conscrypt.java.security.TestKeyStore;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+
 import tests.util.ServiceTester;
 
 /**
@@ -147,6 +153,11 @@ public class KeyManagerFactoryTest {
             } catch (InvalidAlgorithmParameterException expected) {
                 // Ignore
             }
+        }
+
+        if (kmf.getAlgorithm().equals("PAKE")) {
+            assertThrows(KeyStoreException.class, () -> kmf.init(null, null));
+            return; // Functional testing is in PakeKeyManagerFactoryTest
         }
 
         // init with null for default behavior
