@@ -21,6 +21,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -252,7 +253,6 @@ public final class StandardNames {
         addOpenSsl("TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA");
         addOpenSsl("TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA");
         addOpenSsl("TLS_RSA_WITH_AES_128_CBC_SHA");
-        addOpenSsl("SSL_RSA_WITH_3DES_EDE_CBC_SHA");
 
         // TLSv1.2 cipher suites
         addOpenSsl("TLS_RSA_WITH_AES_128_GCM_SHA256");
@@ -458,11 +458,24 @@ public final class StandardNames {
         assertValidCipherSuites(CIPHER_SUITES, cipherSuites);
     }
 
+    private static final List<String> OPTIONAL_CIPHER_SUITES = Arrays.asList(
+            "SSL_RSA_WITH_3DES_EDE_CBC_SHA"
+    );
+
     /**
      * Assert that the provided list of cipher suites matches the supported list.
      */
     public static void assertSupportedCipherSuites(String[] cipherSuites) {
-        assertSupportedCipherSuites(CIPHER_SUITES, cipherSuites);
+        List<String> filteredCipherSuites = new ArrayList<>();
+        for (String cipherSuite : cipherSuites) {
+            if (OPTIONAL_CIPHER_SUITES.contains(cipherSuite)) {
+                continue;
+            }
+            filteredCipherSuites.add(cipherSuite);
+        }
+        String[] filteredCipherSuitesArray = new String[filteredCipherSuites.size()];
+        filteredCipherSuites.toArray(filteredCipherSuitesArray);
+        assertSupportedCipherSuites(CIPHER_SUITES, filteredCipherSuitesArray);
     }
 
     /**
