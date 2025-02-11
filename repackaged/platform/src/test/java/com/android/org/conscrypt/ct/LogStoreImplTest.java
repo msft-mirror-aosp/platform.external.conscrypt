@@ -162,7 +162,7 @@ public class LogStoreImplTest {
     }
 
     @Test
-    public void loadValidLogList_Succeeds() throws Exception {
+    public void loadValidLogList_returnsCompliantState() throws Exception {
         FakeStatsLog metrics = new FakeStatsLog();
         logList = writeFile(validLogList);
         LogStore store = new LogStoreImpl(alwaysCompliantStorePolicy, logList, metrics);
@@ -182,7 +182,7 @@ public class LogStoreImplTest {
                         .build();
         byte[] log1Id = Base64.getDecoder().decode("7s3QZNXbGs7FXLedtM0TojKHRny87N7DUUhZRnEftZs=");
 
-        assertNull("A null logId should return null", store.getKnownLog(null));
+        assertNull("A null logId should return null", store.getKnownLog(/* logId= */ null));
         assertEquals("An existing logId should be returned", log1, store.getKnownLog(log1Id));
         assertEquals("One metric update should be emitted", 1, metrics.states.size());
         assertEquals("The metric update for log list state should be compliant",
@@ -190,7 +190,7 @@ public class LogStoreImplTest {
     }
 
     @Test
-    public void loadMalformedLogList_Fails() throws Exception {
+    public void loadMalformedLogList_returnsMalformedState() throws Exception {
         FakeStatsLog metrics = new FakeStatsLog();
         String content = "}}";
         logList = writeFile(content);
@@ -204,7 +204,7 @@ public class LogStoreImplTest {
     }
 
     @Test
-    public void loadMissingLogList_Fails() throws Exception {
+    public void loadMissingLogList_returnsNotFoundState() throws Exception {
         FakeStatsLog metrics = new FakeStatsLog();
         logList = Paths.get("does_not_exist");
         LogStore store = new LogStoreImpl(alwaysCompliantStorePolicy, logList, metrics);
@@ -217,7 +217,7 @@ public class LogStoreImplTest {
     }
 
     private Path writeFile(String content) throws IOException {
-        Path file = Files.createTempFile("test", null);
+        Path file = Files.createTempFile("test", /* suffix= */ null);
         Files.write(file, content.getBytes());
         return file;
     }
