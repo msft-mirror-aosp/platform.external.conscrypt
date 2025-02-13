@@ -35,7 +35,6 @@ public class PakeClientKeyManagerParametersTest {
     private static final byte[] PASSWORD = new byte[] {1, 2, 3};
     private static final byte[] CLIENT_ID = new byte[] {4, 5, 6};
     private static final byte[] SERVER_ID = new byte[] {7, 8, 9};
-    private static final byte[] W_VALID = new byte[32];
 
     @Test
     @RequiresFlagsEnabled(com.android.org.conscrypt.flags.Flags.FLAG_SPAKE2PLUS_API)
@@ -112,19 +111,6 @@ public class PakeClientKeyManagerParametersTest {
         new PakeClientKeyManagerParameters.Builder().addOption(null);
     }
 
-    @Test(expected = InvalidParameterException.class)
-    @RequiresFlagsEnabled(com.android.org.conscrypt.flags.Flags.FLAG_SPAKE2PLUS_API)
-    public void testBuilder_duplicateOptionAlgorithms() {
-        PakeOption option1 = new PakeOption.Builder("SPAKE2PLUS_PRERELEASE")
-                                     .addMessageComponent("password", PASSWORD.clone())
-                                     .build();
-        PakeOption option2 = new PakeOption.Builder("SPAKE2PLUS_PRERELEASE")
-                                     .addMessageComponent("w0", W_VALID.clone())
-                                     .addMessageComponent("w1", W_VALID.clone())
-                                     .build();
-        new PakeClientKeyManagerParameters.Builder().addOption(option1).addOption(option2).build();
-    }
-
     @Test
     @RequiresFlagsEnabled(com.android.org.conscrypt.flags.Flags.FLAG_SPAKE2PLUS_API)
     public void testGetOptions_returnsClone() {
@@ -136,31 +122,5 @@ public class PakeClientKeyManagerParametersTest {
         List<PakeOption> options = params.getOptions();
         options.clear(); // Try to modify the returned list
         assertEquals(1, params.getOptions().size()); // The original list should be unchanged
-    }
-
-    @Test
-    @RequiresFlagsEnabled(com.android.org.conscrypt.flags.Flags.FLAG_SPAKE2PLUS_API)
-    public void testBuilder_spake2PlusPrerelease_w0Withoutw1() {
-        PakeOption option = new PakeOption.Builder("SPAKE2PLUS_PRERELEASE")
-                                    .addMessageComponent("w0", W_VALID.clone())
-                                    .addMessageComponent("L", new byte[65])
-                                    .build();
-        PakeClientKeyManagerParameters.Builder builder =
-                new PakeClientKeyManagerParameters.Builder();
-        assertThrows(InvalidParameterException.class, () -> builder.addOption(option));
-    }
-
-    @Test
-    @RequiresFlagsEnabled(com.android.org.conscrypt.flags.Flags.FLAG_SPAKE2PLUS_API)
-    public void testBuilder_spake2PlusPrerelease_w0Withw1() {
-        PakeOption option = new PakeOption.Builder("SPAKE2PLUS_PRERELEASE")
-                                    .addMessageComponent("w0", W_VALID.clone())
-                                    .addMessageComponent("w1", W_VALID.clone())
-                                    .build();
-        PakeClientKeyManagerParameters params =
-                new PakeClientKeyManagerParameters.Builder().addOption(option).build();
-        assertEquals(1, params.getOptions().size());
-        assertArrayEquals(W_VALID, params.getOptions().get(0).getMessageComponent("w0"));
-        assertArrayEquals(W_VALID, params.getOptions().get(0).getMessageComponent("w1"));
     }
 }

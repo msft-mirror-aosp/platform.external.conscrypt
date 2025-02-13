@@ -191,15 +191,6 @@ public final class PakeServerKeyManagerParameters implements ManagerFactoryParam
             List<PakeOption> storedOptions = new ArrayList<PakeOption>(options.size());
 
             for (PakeOption option : options) {
-                // Servers must have both "w0" and "L" for
-                // SPAKE2PLUS_PRERELEASE.
-                if (option.getAlgorithm().equals("SPAKE2PLUS_PRERELEASE")
-                        && option.getMessageComponent("w0") != null
-                        && option.getMessageComponent("L") == null) {
-                    throw new InvalidParameterException("SPAKE2PLUS_PRERELEASE needs L when w0 is "
-                            + "present");
-                }
-
                 // Check that options are not duplicated.
                 for (PakeOption previousOption : storedOptions) {
                     if (previousOption.getAlgorithm().equals(option.getAlgorithm())) {
@@ -207,7 +198,6 @@ public final class PakeServerKeyManagerParameters implements ManagerFactoryParam
                                 "There are multiple options with the same algorithm.");
                     }
                 }
-
                 storedOptions.add(option);
             }
 
