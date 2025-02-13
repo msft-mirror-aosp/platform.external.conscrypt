@@ -30,9 +30,6 @@ import java.security.InvalidParameterException;
 
 @RunWith(JUnit4.class)
 public class PakeOptionTest {
-    private static final byte[] W_VALID = new byte[32];
-    private static final byte[] L_VALID = new byte[65];
-
     @Test
     @RequiresFlagsEnabled(com.android.org.conscrypt.flags.Flags.FLAG_SPAKE2PLUS_API)
     public void testBuilder_valid() {
@@ -41,30 +38,6 @@ public class PakeOptionTest {
                                     .build();
         assertEquals("SPAKE2PLUS_PRERELEASE", option.getAlgorithm());
         assertNotNull(option.getMessageComponent("password"));
-    }
-
-    @Test
-    @RequiresFlagsEnabled(com.android.org.conscrypt.flags.Flags.FLAG_SPAKE2PLUS_API)
-    public void testBuilder_validWithW0W1() {
-        PakeOption option = new PakeOption.Builder("SPAKE2PLUS_PRERELEASE")
-                                    .addMessageComponent("w0", W_VALID.clone())
-                                    .addMessageComponent("w1", W_VALID.clone())
-                                    .build();
-        assertEquals("SPAKE2PLUS_PRERELEASE", option.getAlgorithm());
-        assertNotNull(option.getMessageComponent("w0"));
-        assertNotNull(option.getMessageComponent("w1"));
-    }
-
-    @Test
-    @RequiresFlagsEnabled(com.android.org.conscrypt.flags.Flags.FLAG_SPAKE2PLUS_API)
-    public void testBuilder_validWithW0L() {
-        PakeOption option = new PakeOption.Builder("SPAKE2PLUS_PRERELEASE")
-                                    .addMessageComponent("w0", W_VALID.clone())
-                                    .addMessageComponent("L", L_VALID.clone())
-                                    .build();
-        assertEquals("SPAKE2PLUS_PRERELEASE", option.getAlgorithm());
-        assertNotNull(option.getMessageComponent("w0"));
-        assertNotNull(option.getMessageComponent("L"));
     }
 
     @Test(expected = InvalidParameterException.class)
@@ -99,84 +72,23 @@ public class PakeOptionTest {
                 .addMessageComponent("", new byte[] {1, 2, 3});
     }
 
-    @Test(expected = InvalidParameterException.class)
-    @RequiresFlagsEnabled(com.android.org.conscrypt.flags.Flags.FLAG_SPAKE2PLUS_API)
-    public void testBuilder_invalidSpake2Plus_passwordWithW0() {
-        new PakeOption.Builder("SPAKE2PLUS_PRERELEASE")
-                .addMessageComponent("password", new byte[] {1, 2, 3})
-                .addMessageComponent("w0", W_VALID.clone())
-                .build();
-    }
-
-    @Test(expected = InvalidParameterException.class)
-    @RequiresFlagsEnabled(com.android.org.conscrypt.flags.Flags.FLAG_SPAKE2PLUS_API)
-    public void testBuilder_invalidSpake2Plus_passwordWithW1() {
-        new PakeOption.Builder("SPAKE2PLUS_PRERELEASE")
-                .addMessageComponent("password", new byte[] {1, 2, 3})
-                .addMessageComponent("w1", W_VALID.clone())
-                .build();
-    }
-
-    @Test(expected = InvalidParameterException.class)
-    @RequiresFlagsEnabled(com.android.org.conscrypt.flags.Flags.FLAG_SPAKE2PLUS_API)
-    public void testBuilder_invalidSpake2Plus_passwordWithL() {
-        new PakeOption.Builder("SPAKE2PLUS_PRERELEASE")
-                .addMessageComponent("password", new byte[] {1, 2, 3})
-                .addMessageComponent("L", L_VALID.clone())
-                .build();
-    }
-
-    @Test(expected = InvalidParameterException.class)
-    @RequiresFlagsEnabled(com.android.org.conscrypt.flags.Flags.FLAG_SPAKE2PLUS_API)
-    public void testBuilder_invalidSpake2Plus_w0WithoutW1OrL() {
-        new PakeOption.Builder("SPAKE2PLUS_PRERELEASE")
-                .addMessageComponent("w0", new byte[] {1, 2, 3})
-                .build();
-    }
-
-    @Test(expected = InvalidParameterException.class)
-    @RequiresFlagsEnabled(com.android.org.conscrypt.flags.Flags.FLAG_SPAKE2PLUS_API)
-    public void testBuilder_invalidSpake2Plus_w0WithW1AndL() {
-        new PakeOption.Builder("SPAKE2PLUS_PRERELEASE")
-                .addMessageComponent("w0", W_VALID.clone())
-                .addMessageComponent("w1", W_VALID.clone())
-                .addMessageComponent("L", L_VALID.clone())
-                .build();
-    }
-
     @Test
     @RequiresFlagsEnabled(com.android.org.conscrypt.flags.Flags.FLAG_SPAKE2PLUS_API)
-    public void testGetMessageComponent_nonExistingKey() {
+    public void testBuilder_invalidSpake2Plus_passwordWithContext() {
         PakeOption option = new PakeOption.Builder("SPAKE2PLUS_PRERELEASE")
-                                    .addMessageComponent("password", new byte[] {1, 2, 3})
-                                    .build();
+                .addMessageComponent("password", new byte[] {1, 2, 3})
+                .addMessageComponent("context", new byte[] {4, 2, 3})
+                .build();
+        assertNotNull(option.getMessageComponent("password"));
+        assertNotNull(option.getMessageComponent("context"));
         assertNull(option.getMessageComponent("non_existing_key"));
     }
 
     @Test(expected = InvalidParameterException.class)
     @RequiresFlagsEnabled(com.android.org.conscrypt.flags.Flags.FLAG_SPAKE2PLUS_API)
-    public void testBuilder_invalidSpake2Plus_w1Invalid() {
-        new PakeOption.Builder("SPAKE2PLUS_PRERELEASE")
-                .addMessageComponent("w0", W_VALID.clone())
-                .addMessageComponent("w1", new byte[] {1, 2, 3})
-                .build();
-    }
-
-    @Test(expected = InvalidParameterException.class)
-    @RequiresFlagsEnabled(com.android.org.conscrypt.flags.Flags.FLAG_SPAKE2PLUS_API)
-    public void testBuilder_invalidSpake2Plus_w0Invalid() {
+    public void testBuilder_invalidSpake2Plus_noPassword() {
         new PakeOption.Builder("SPAKE2PLUS_PRERELEASE")
                 .addMessageComponent("w0", new byte[] {1, 2, 3})
-                .addMessageComponent("w1", W_VALID.clone())
-                .build();
-    }
-
-    @Test(expected = InvalidParameterException.class)
-    @RequiresFlagsEnabled(com.android.org.conscrypt.flags.Flags.FLAG_SPAKE2PLUS_API)
-    public void testBuilder_invalidSpake2Plus_lInvalid() {
-        new PakeOption.Builder("SPAKE2PLUS_PRERELEASE")
-                .addMessageComponent("w0", W_VALID.clone())
-                .addMessageComponent("L", new byte[] {1, 2, 3})
                 .build();
     }
 }
