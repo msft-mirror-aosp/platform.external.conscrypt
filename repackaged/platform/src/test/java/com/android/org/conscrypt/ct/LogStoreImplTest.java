@@ -32,25 +32,21 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import java.io.ByteArrayInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.function.Supplier;
 
 /**
  * @hide This class is not part of the Android public SDK API
  */
 @RunWith(JUnit4.class)
 public class LogStoreImplTest {
+    /** FakeStatsLog captures the events being reported */
     static class FakeStatsLog extends NoopStatsLog {
         public ArrayList<LogStore.State> states = new ArrayList<LogStore.State>();
 
@@ -83,6 +79,24 @@ public class LogStoreImplTest {
             return PolicyCompliance.COMPLY;
         }
     };
+
+    /* Time supplier that can be set to any arbitrary time */
+    static class TimeSupplier implements Supplier<Long> {
+        private long currentTimeInNs;
+
+        TimeSupplier(long currentTimeInNs) {
+            this.currentTimeInNs = currentTimeInNs;
+        }
+
+        @Override
+        public Long get() {
+            return currentTimeInNs;
+        }
+
+        public void setCurrentTimeInNs(long currentTimeInNs) {
+            this.currentTimeInNs = currentTimeInNs;
+        }
+    }
 
     // clang-format off
     static final String validLogList = "" +
@@ -154,17 +168,23 @@ public class LogStoreImplTest {
 "}";
     // clang-format on
 
+    Path grandparentDir;
+    Path parentDir;
     Path logList;
 
     @After
     public void tearDown() throws Exception {
-        Files.deleteIfExists(logList);
+        if (logList != null) {
+            Files.deleteIfExists(logList);
+            Files.deleteIfExists(parentDir);
+            Files.deleteIfExists(grandparentDir);
+        }
     }
 
     @Test
-    public void loadValidLogList_Succeeds() throws Exception {
+    public void loadValidLogList_returnsCompliantState() throws Exception {
         FakeStatsLog metrics = new FakeStatsLog();
-        logList = writeFile(validLogList);
+        logList = writeLogList(validLogList);
         LogStore store = new LogStoreImpl(alwaysCompliantStorePolicy, logList, metrics);
         byte[] pem = ("-----BEGIN PUBLIC KEY-----\n"
                 + "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEHblsqctplMVc5ramA7vSuNxUQxcomQwGAVAdnWTAWUYr"
@@ -182,7 +202,7 @@ public class LogStoreImplTest {
                         .build();
         byte[] log1Id = Base64.getDecoder().decode("7s3QZNXbGs7FXLedtM0TojKHRny87N7DUUhZRnEftZs=");
 
-        assertNull("A null logId should return null", store.getKnownLog(null));
+        assertNull("A null logId should return null", store.getKnownLog(/* logId= */ null));
         assertEquals("An existing logId should be returned", log1, store.getKnownLog(log1Id));
         assertEquals("One metric update should be emitted", 1, metrics.states.size());
         assertEquals("The metric update for log list state should be compliant",
@@ -190,10 +210,10 @@ public class LogStoreImplTest {
     }
 
     @Test
-    public void loadMalformedLogList_Fails() throws Exception {
+    public void loadMalformedLogList_returnsMalformedState() throws Exception {
         FakeStatsLog metrics = new FakeStatsLog();
         String content = "}}";
-        logList = writeFile(content);
+        logList = writeLogList(content);
         LogStore store = new LogStoreImpl(alwaysCompliantStorePolicy, logList, metrics);
 
         assertEquals(
@@ -204,10 +224,10 @@ public class LogStoreImplTest {
     }
 
     @Test
-    public void loadMissingLogList_Fails() throws Exception {
+    public void loadMissingLogList_returnsNotFoundState() throws Exception {
         FakeStatsLog metrics = new FakeStatsLog();
-        logList = Paths.get("does_not_exist");
-        LogStore store = new LogStoreImpl(alwaysCompliantStorePolicy, logList, metrics);
+        Path missingLogList = Paths.get("missing_dir", "missing_subdir", "does_not_exist_log_list");
+        LogStore store = new LogStoreImpl(alwaysCompliantStorePolicy, missingLogList, metrics);
 
         assertEquals(
                 "The log state should be not found", LogStore.State.NOT_FOUND, store.getState());
@@ -216,8 +236,77 @@ public class LogStoreImplTest {
                 LogStore.State.NOT_FOUND, metrics.states.get(0));
     }
 
-    private Path writeFile(String content) throws IOException {
-        Path file = Files.createTempFile("test", null);
+    @Test
+    public void loadMissingAndThenFoundLogList_logListIsLoaded() throws Exception {
+        // Arrange
+        FakeStatsLog metrics = new FakeStatsLog();
+        // Allocate a temporary file path and delete it. We keep the temporary
+        // path so that we can add a valid log list later on.
+        logList = writeLogList("");
+        Files.deleteIfExists(logList);
+        Files.deleteIfExists(parentDir);
+        Files.deleteIfExists(grandparentDir);
+        TimeSupplier fakeTime = new TimeSupplier(/* currentTimeInNs= */ 0);
+        LogStore store = new LogStoreImpl(alwaysCompliantStorePolicy, logList, metrics, fakeTime);
+        assertEquals(
+                "The log state should be not found", LogStore.State.NOT_FOUND, store.getState());
+
+        // Act
+        Files.createDirectory(grandparentDir);
+        Files.createDirectory(parentDir);
+        Files.write(logList, validLogList.getBytes());
+
+        // Assert
+        // 10ns < 10min, we should not check the log list yet.
+        fakeTime.setCurrentTimeInNs(10);
+        assertEquals(
+                "The log state should be not found", LogStore.State.NOT_FOUND, store.getState());
+
+        // 12min, the log list should be reloadable.
+        fakeTime.setCurrentTimeInNs(12L * 60 * 1000 * 1_000_000);
+        assertEquals(
+                "The log state should be compliant", LogStore.State.COMPLIANT, store.getState());
+    }
+
+    @Test
+    public void loadExistingAndThenRemovedLogList_logListIsNotFound() throws Exception {
+        FakeStatsLog metrics = new FakeStatsLog();
+        logList = writeLogList(validLogList);
+        TimeSupplier fakeTime = new TimeSupplier(/* currentTimeInNs= */ 0);
+        LogStore store = new LogStoreImpl(alwaysCompliantStorePolicy, logList, metrics, fakeTime);
+        assertEquals("The log should be loaded", LogStore.State.COMPLIANT, store.getState());
+
+        Files.delete(logList);
+        // 12min, the log list should be reloadable.
+        fakeTime.setCurrentTimeInNs(12L * 60 * 1000 * 1_000_000);
+
+        assertEquals(
+                "The log should have been refreshed", LogStore.State.NOT_FOUND, store.getState());
+    }
+
+    @Test
+    public void loadExistingLogListAndThenMoveDirectory_logListIsNotFound() throws Exception {
+        FakeStatsLog metrics = new FakeStatsLog();
+        logList = writeLogList(validLogList);
+        TimeSupplier fakeTime = new TimeSupplier(/* currentTimeInNs= */ 0);
+        LogStore store = new LogStoreImpl(alwaysCompliantStorePolicy, logList, metrics, fakeTime);
+        assertEquals("The log should be loaded", LogStore.State.COMPLIANT, store.getState());
+
+        Path oldParentDir = parentDir;
+        parentDir = grandparentDir.resolve("more_current");
+        Files.move(oldParentDir, parentDir);
+        logList = parentDir.resolve("log_list.json");
+        // 12min, the log list should be reloadable.
+        fakeTime.setCurrentTimeInNs(12L * 60 * 1000 * 1_000_000);
+
+        assertEquals(
+                "The log should have been refreshed", LogStore.State.NOT_FOUND, store.getState());
+    }
+
+    private Path writeLogList(String content) throws IOException {
+        grandparentDir = Files.createTempDirectory("v1");
+        parentDir = Files.createDirectory(grandparentDir.resolve("current"));
+        Path file = Files.createFile(parentDir.resolve("log_list.json"));
         Files.write(file, content.getBytes());
         return file;
     }

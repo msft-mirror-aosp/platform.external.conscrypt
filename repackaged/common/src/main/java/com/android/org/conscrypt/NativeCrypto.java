@@ -73,6 +73,7 @@ public final class NativeCrypto {
             error = t;
         }
         loadError = error;
+        setTlsV1DeprecationStatus(Platform.isTlsV1Deprecated(), Platform.isTlsV1Supported());
     }
 
     private native static void clinit();
@@ -1014,6 +1015,8 @@ public final class NativeCrypto {
     static native void SSL_CTX_set_session_id_context(long ssl_ctx, AbstractSessionContext holder, byte[] sid_ctx);
 
     static native long SSL_CTX_set_timeout(long ssl_ctx, AbstractSessionContext holder, long seconds);
+
+    static native void SSL_CREDENTIAL_free(long sslCredentialNativePointer);
 
     static native long SSL_new(long ssl_ctx, AbstractSessionContext holder) throws SSLException;
 
