@@ -20,7 +20,6 @@ package com.android.org.conscrypt.metrics;
 import static org.junit.Assert.assertEquals;
 
 import android.util.StatsEvent;
-import com.android.org.conscrypt.Platform;
 import com.android.org.conscrypt.TestUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -39,9 +38,10 @@ public class MetricsTest {
     public void test_reflexiveEvent() throws Exception {
         TestUtils.assumeStatsLogAvailable();
 
+        Object sdkVersion = getSdkVersion();
         StatsEvent frameworkStatsEvent;
         ReflexiveStatsEvent reflexiveStatsEvent;
-        if (Platform.isSdkGreater(32)) {
+        if ((sdkVersion != null) && ((int) sdkVersion > 32)) {
             frameworkStatsEvent = StatsEvent.newBuilder()
                                                  .setAtomId(TLS_HANDSHAKE_REPORTED)
                                                  .writeBoolean(false)
@@ -115,4 +115,16 @@ public class MetricsTest {
             }
         }
     }
+
+    static Object getSdkVersion() {
+        try {
+            OptionalMethod getSdkVersion =
+                    new OptionalMethod(Class.forName("dalvik.system.VMRuntime"),
+                                        "getSdkVersion");
+            return getSdkVersion.invokeStatic();
+        } catch (ClassNotFoundException e) {
+            return null;
+        }
+    }
+
 }
