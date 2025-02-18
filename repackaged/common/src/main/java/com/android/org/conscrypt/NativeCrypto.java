@@ -688,8 +688,8 @@ public final class NativeCrypto {
             byte[] id_verifier_array,
             boolean is_client,
             long ssl_ctx,
-            AbstractSessionContext holder)
-        throws SSLException;
+            SSLParametersImpl ssl_holder)
+        throws IOException;
 
     // --- ASN1_TIME -----------------------------------------------------------
 
