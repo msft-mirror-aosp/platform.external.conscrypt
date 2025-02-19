@@ -143,41 +143,10 @@ public final class PakeOption {
         }
 
         private void validateSpake2PlusComponents() {
-            // For SPAKE2+ one of the following is present exclusively:
-            //  - password
-            //  - w0 and w1 (for Client)
-            //  - w0 and L (for Server)
-            if (messageComponents.containsKey("password")) {
-                if (messageComponents.containsKey("w0") || messageComponents.containsKey("w1")
-                        || messageComponents.containsKey("L")) {
-                    throw new InvalidParameterException(
-                            "For SPAKE2+, 'password' must be exclusive.");
-                }
-            } else if (messageComponents.containsKey("w0")) {
-                if (messageComponents.get("w0").length != W_LENGTH) {
-                    throw new InvalidParameterException("w0 must be " + W_LENGTH + " bytes.");
-                }
-                if (!messageComponents.containsKey("w1") && !messageComponents.containsKey("L")) {
-                    throw new InvalidParameterException("For SPAKE2+, 'w0' must be present with "
-                            + "either 'w1' or 'L'.");
-                }
-                if (messageComponents.containsKey("w1")) {
-                    if (messageComponents.containsKey("L")) {
-                        throw new InvalidParameterException(
-                                "For SPAKE2+, 'w1' and 'L' cannot both be present.");
-                    }
-                    if (messageComponents.get("w1").length != W_LENGTH) {
-                        throw new InvalidParameterException("w1 must be " + W_LENGTH + " bytes.");
-                    }
-                } else { // messageComponents.containsKey("L")
-                    if (messageComponents.get("L").length != L_LENGTH) {
-                        throw new InvalidParameterException("L must be " + L_LENGTH + " bytes.");
-                    }
-                }
-            } else {
+            // For SPAKE2+ password is the only required component.
+            if (!messageComponents.containsKey("password")) {
                 throw new InvalidParameterException(
-                        "For SPAKE2+, one of 'password', 'w0' with 'w1', or 'w0' with "
-                        + "'L' must be present.");
+                        "For SPAKE2+, 'password' must be present.");
             }
         }
     }
