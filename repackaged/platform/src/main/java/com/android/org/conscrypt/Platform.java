@@ -628,7 +628,7 @@ final public class Platform {
             Object sdkVersion = getSdkVersionMethod.invoke(vmRuntime);
             return (sdkVersion != null) && ((int) sdkVersion > sdk);
         } catch (IllegalAccessException |
-          NullPointerException | InvocationTargetException e) {
+          NullPointerException | InvocationTargetException | NoSuchMethodException e) {
             return false;
         } catch (Exception e) {
             throw new RuntimeException(e);

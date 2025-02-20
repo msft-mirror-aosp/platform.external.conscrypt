@@ -138,10 +138,13 @@ public class SpakeTest {
     private void sendData(Pair<SSLSocket, SSLSocket> sockets) throws Exception {
         SSLSocket client = sockets.getFirst();
         SSLSocket server = sockets.getSecond();
+        byte[] readBytes = new byte[3];
         server.getOutputStream().write(new byte[] {1, 2, 3});
         client.getOutputStream().write(new byte[] {4, 5, 6});
-        assertArrayEquals(new byte[] {4, 5, 6}, server.getInputStream().readNBytes(3));
-        assertArrayEquals(new byte[] {1, 2, 3}, client.getInputStream().readNBytes(3));
+        server.getInputStream().read(readBytes, 0, 3);
+        assertArrayEquals(new byte[] {4, 5, 6}, readBytes);
+        client.getInputStream().read(readBytes, 0, 3);
+        assertArrayEquals(new byte[] {1, 2, 3}, readBytes);
     }
 
     private void closeSockets(Pair<SSLSocket, SSLSocket> sockets) throws Exception {
