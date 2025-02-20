@@ -23,7 +23,6 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import android.util.Pair;
 import android.net.ssl.PakeClientKeyManagerParameters;
 import android.net.ssl.PakeOption;
 import android.net.ssl.PakeServerKeyManagerParameters;
@@ -44,7 +43,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.HexFormat;
 import javax.net.SocketFactory;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
