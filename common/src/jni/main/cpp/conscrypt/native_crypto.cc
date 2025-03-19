@@ -11081,8 +11081,6 @@ static void NativeCrypto_SSL_CTX_set_spake_credential(JNIEnv* env, jclass,
         return;
     }
 
-    std::size_t hs_limit = static_cast<std::size_t>(handshake_limit);
-
     JNI_TRACE("SSL_CTX_set_spake_credential(%p, %p, %p, %p, %d, %d, %p)", context, pw_array,
               id_prover_array, id_verifier_array, is_client, handshake_limit,
               ssl_ctx);
