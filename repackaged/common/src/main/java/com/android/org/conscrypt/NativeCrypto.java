@@ -842,7 +842,7 @@ public final class NativeCrypto {
         if (loadError == null) {
             // If loadError is not null, it means the native code was not loaded, so
             // get_cipher_names will throw UnsatisfiedLinkError.
-            String[] allCipherSuites = get_cipher_names("ALL:!DHE");
+            String[] allCipherSuites = get_cipher_names("ALL:!DHE:!3DES");
 
             // get_cipher_names returns an array where even indices are the standard name and odd
             // indices are the OpenSSL name.
