@@ -602,6 +602,9 @@ java_test {
         "repackaged/testing/src/main/java/**/*.java",
         "publicapi/src/test/java/**/*.java",
     ],
+    exclude_srcs: [
+        "repackaged/platform/src/test/java/com/android/org/conscrypt/CertBlocklistTest.java"
+    ],
     java_resource_dirs: [
         // Resource directories do not need repackaging.
         "openjdk/src/test/resources",
