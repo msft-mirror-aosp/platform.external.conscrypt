@@ -656,6 +656,7 @@ java_test {
         // b/360775273.
         "repackaged/platform/src/test/java/com/android/org/conscrypt/ct/*.java",
         "repackaged/common/src/test/java/com/android/org/conscrypt/ct/*.java",
+        "repackaged/platform/src/test/java/com/android/org/conscrypt/CertBlocklistTest.java",
     ],
     java_resource_dirs: [
         // Resource directories do not need repackaging.
