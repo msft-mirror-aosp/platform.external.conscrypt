@@ -114,9 +114,10 @@ public class NativeCryptoArgTest {
         // These methods don't throw on a null first arg as they can get called before the
         // connection is fully initialised. However if the first arg is non-NULL, any subsequent
         // null args should throw NPE.
+        // SSL_shutdown is deliberately absent: it only exists in Conscrypt modules which
+        // still contain ConscryptFileDescriptorSocket.
         String[] nonThrowingMethods = new String[] {
                 "SSL_interrupt",
-                "SSL_shutdown",
                 "ENGINE_SSL_shutdown",
         };
 
@@ -146,8 +147,6 @@ public class NativeCryptoArgTest {
         filter = MethodFilter.nameFilter("Non throwing NativeSsl methods", nonThrowingMethods);
         testMethods(filter, null);
 
-        expectVoid("SSL_shutdown", NOT_NULL, null, null, null);
-        expectNPE("SSL_shutdown", NOT_NULL, null, new FileDescriptor(), null);
         expectNPE("ENGINE_SSL_shutdown", NOT_NULL, null, null);
         expectVoid("SSL_set_session", NOT_NULL, null, NULL);
     }
