@@ -347,6 +347,8 @@ public final class TestUtils {
                     "use the same default implementation during testing");
             }
             return sfDefault;
+        } catch (NoSuchFieldException e) {
+            return true;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
