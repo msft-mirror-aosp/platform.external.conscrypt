@@ -225,6 +225,9 @@ public final class CipherTest {
         if (algorithm.startsWith("CHACHA20/")) {
             return "CHACHA20";
         }
+        if (algorithm.startsWith("XCHACHA20/")) {
+            return "XCHACHA20";
+        }
         if (algorithm.startsWith("DESEDE/")) {
             return "DESEDE";
         }
@@ -306,7 +309,8 @@ public final class CipherTest {
     private static boolean isAEAD(String algorithm) {
         return "GCM".equals(algorithm) || algorithm.contains("/GCM/")
                 || algorithm.contains("/GCM-SIV/")
-                || algorithm.equals("CHACHA20/POLY1305/NOPADDING");
+                || algorithm.equals("CHACHA20/POLY1305/NOPADDING")
+                || algorithm.equals("XCHACHA20/POLY1305/NOPADDING");
     }
 
     private static boolean isStreamMode(String algorithm) {
@@ -437,6 +441,7 @@ public final class CipherTest {
         setExpectedBlockSize("ARC4", 0);
         setExpectedBlockSize("CHACHA20", 0);
         setExpectedBlockSize("CHACHA20/POLY1305/NOPADDING", 0);
+        setExpectedBlockSize("XCHACHA20/POLY1305/NOPADDING", 0);
         setExpectedBlockSize("PBEWITHSHAAND40BITRC4", 0);
         setExpectedBlockSize("PBEWITHSHAAND128BITRC4", 0);
 
@@ -680,6 +685,7 @@ public final class CipherTest {
         setExpectedOutputSize("ARCFOUR", 0);
         setExpectedOutputSize("CHACHA20", 0);
         setExpectedOutputSize("CHACHA20/POLY1305/NOPADDING", 0);
+        setExpectedOutputSize("XCHACHA20/POLY1305/NOPADDING", 0);
         setExpectedOutputSize("PBEWITHSHAAND40BITRC4", 0);
         setExpectedOutputSize("PBEWITHSHAAND128BITRC4", 0);
 
@@ -985,6 +991,11 @@ public final class CipherTest {
             new SecureRandom().nextBytes(iv);
             return new IvParameterSpec(iv);
         }
+        if (algorithm.equals("XCHACHA20/POLY1305/NOPADDING")) {
+            final byte[] iv = new byte[24];
+            new SecureRandom().nextBytes(iv);
+            return new IvParameterSpec(iv);
+        }
         return null;
     }
 
@@ -1124,6 +1135,8 @@ public final class CipherTest {
         }
 
         seenCiphersWithModeAndPadding.removeAll(seenBaseCipherNames);
+        // There is no bare XChaCha20, only XChaCha20/Poly1305/NoPadding.
+        seenCiphersWithModeAndPadding.remove("XCHACHA20");
         assertEquals("Ciphers seen with mode and padding but not base cipher",
                 Collections.EMPTY_SET, seenCiphersWithModeAndPadding);
 
