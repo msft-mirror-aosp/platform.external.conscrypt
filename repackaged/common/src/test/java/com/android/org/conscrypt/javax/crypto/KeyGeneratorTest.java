@@ -127,6 +127,7 @@ public class KeyGeneratorTest {
         putKeySize("Blowfish", 32+8);
         putKeySize("Blowfish", 448);
         putKeySize("ChaCha20", 256);
+        putKeySize("XChaCha20", 256);
         putKeySize("DES", 56);
         putKeySize("DESede", 112);
         putKeySize("DESede", 168);
